@@ -291,8 +291,16 @@ ul {
   transition: background-color var(--fast) var(--ease);
 }
 
-#suggestions-list a img {
+/* the letter replaces a remote favicon: nothing is requested to render it */
+.suggestion-mark {
+  display: flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--hairline);
+  color: var(--foreground50);
 }
 
 #suggestions-list a span {

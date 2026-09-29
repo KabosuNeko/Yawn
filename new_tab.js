@@ -323,12 +323,8 @@ const getSuggestions = async (query) => {
 const buildSuggestionItem = (entry) => {
   const link = el("a", { className: "suggestion-link", href: entry.url });
   link.append(
-    el("img", {
-      src: `https://www.google.com/s2/favicons?sz=32&domain_url=${new URL(entry.url).origin}`,
-      alt: "",
-      width: 16,
-      height: 16,
-    }),
+    // the mark is computed locally: no request leaves the browser
+    el("span", { className: "suggestion-mark", textContent: monogram(entry.url) }),
     el("span", { textContent: entry.title || entry.url }),
     el("span", { textContent: "\u2192" }),
     svgIcon(icons.loading.content, true),
