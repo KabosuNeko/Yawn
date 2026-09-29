@@ -1,19 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Yawn">
   <title>Yawn</title>
-  <!-- the 16px drawing: same face, every stroke bold enough to survive the size -->
+  <!-- the 16px drawing: solid masses only, no outline can turn to mud at this size -->
   <rect x="2" y="2" width="124" height="124" rx="10" fill="#000000"/>
-  <g fill="none" stroke="#cccccc" stroke-linecap="round" transform="rotate(-3 64 64)">
-    <g stroke-width="9">
-      <path d="M50 34 C48 26 46 22 44 18"/>
-      <path d="M64 29 C65 22 66 18 68 14"/>
-      <path d="M78 33 C84 27 87 23 90 19"/>
+  <g transform="rotate(-3 64 64)">
+    <g fill="#f4efe9">
+      <path d="M42 42 C38 30 34 22 30 14 C38 22 45 31 52 40 Z"/>
+      <path d="M58 37 C57 27 57 19 58 11 C63 20 66 28 68 36 Z"/>
+      <path d="M74 40 C83 32 90 25 97 18 C94 28 89 36 82 44 Z"/>
     </g>
-    <path stroke-width="10" d="M30 70 C28 46 44 30 64 29 C86 28 100 44 100 68 C100 92 84 106 62 107 C42 108 33 92 30 70 Z"/>
-    <g stroke-width="11">
-      <path d="M42 62 L54 64"/>
-      <path d="M74 64 L86 62"/>
-    </g>
+    <path fill="#f4efe9" d="M58 36 C77 36 93 49 95 66 C97 83 88 99 71 104 C54 109 33 103 26 89 C19 75 25 47 42 40 C47 37 52 36 58 36 Z"/>
   </g>
-  <path fill="#cccccc" d="M64 76 C73 76 77 84 75 92 C73 100 67 104 61 102 C54 100 52 92 55 85 C57 79 59 76 64 76 Z"/>
-  <path fill="#c0574a" d="M60 96 C62 93 68 93 71 96 C72 100 68 104 64 103 C60 102 59 99 60 96 Z"/>
+  <g fill="#e89a8a">
+    <ellipse cx="32" cy="88" rx="8.5" ry="5" transform="rotate(-10 32 88)"/>
+    <ellipse cx="84" cy="88" rx="8.5" ry="5" transform="rotate(10 84 88)"/>
+  </g>
+  <g fill="#332b28">
+    <ellipse cx="45" cy="73" rx="8" ry="10"/>
+    <ellipse cx="71" cy="73" rx="8" ry="10"/>
+  </g>
+  <ellipse cx="58" cy="93" rx="6.5" ry="7.5" fill="#332b28"/>
+  <ellipse cx="58" cy="97" rx="3.8" ry="3" fill="#dd6b5a"/>
 </svg>

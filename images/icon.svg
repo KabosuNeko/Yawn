@@ -1,31 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Yawn">
   <title>Yawn</title>
   <rect x="4" y="4" width="120" height="120" rx="8" fill="#000000"/>
-  <g fill="none" stroke="#cccccc" stroke-linecap="round" transform="rotate(-2 64 64)">
-    <!-- spiky anime hair, uneven on purpose -->
-    <g stroke-width="5">
-      <path d="M46 40 C44 34 41 30 38 26"/>
-      <path d="M55 36 C54 30 53 26 53 21"/>
-      <path d="M66 35 C68 29 70 26 74 22"/>
-      <path d="M77 38 C83 34 87 30 91 26"/>
+  <g transform="rotate(-2 64 64)">
+    <!-- hair, cream like the face and tucked under it -->
+    <g fill="#f4efe9">
+      <path d="M44 42 C40 32 35 23 30 14 C38 21 45 30 52 39 Z"/>
+      <path d="M58 38 C57 28 57 20 58 11 C62 20 65 28 67 37 Z"/>
+      <path d="M72 41 C80 32 87 25 95 17 C93 28 88 37 81 46 Z"/>
     </g>
-    <!-- the head: a wobbly outline with a second, shorter sketch pass -->
-    <path stroke-width="5" d="M36 68 C34 50 46 37 63 36 C80 35 93 48 93 66 C93 86 80 102 62 103 C44 104 38 88 36 68 Z"/>
-    <path stroke-width="4" d="M94 72 C95 62 94 53 90 46"/>
-    <!-- sleepy closed eyes with a lash tick each -->
-    <g stroke-width="4">
-      <path d="M45 66 C49 61 56 61 60 66"/>
-      <path d="M43 65 C42 63 41 62 40 61"/>
-      <path d="M68 66 C72 61 79 61 83 66"/>
-      <path d="M85 65 C86 63 87 62 88 61"/>
+    <!-- the face: a solid, slightly squashed blob with a wonky edge -->
+    <path fill="#f4efe9" d="M58 38 C76 38 92 50 94 66 C96 82 88 98 72 103 C56 108 36 103 28 90 C20 77 24 50 40 42 C46 39 52 38 58 38 Z"/>
+    <!-- blush, the main reason it reads as cute at any size -->
+    <g fill="#e89a8a" opacity="0.9">
+      <ellipse cx="30" cy="86" rx="7.5" ry="4.5" transform="rotate(-8 30 86)"/>
+      <ellipse cx="86" cy="86" rx="7.5" ry="4.5" transform="rotate(8 86 86)"/>
     </g>
-    <!-- blush -->
-    <g stroke-width="3">
-      <path d="M40 80 C43 81 45 82 47 83"/>
-      <path d="M81 83 C83 82 85 81 88 80"/>
+    <!-- big round eyes, low and wide apart, with a highlight -->
+    <g fill="#332b28">
+      <ellipse cx="42" cy="74" rx="7" ry="8.5" transform="rotate(-4 42 74)"/>
+      <ellipse cx="74" cy="74" rx="7" ry="8.5" transform="rotate(4 74 74)"/>
     </g>
-    <!-- the yawn -->
-    <path stroke-width="5" d="M64 71 C71 71 75 77 73 85 C71 92 65 96 60 94 C54 92 52 85 55 79 C57 74 59 71 64 71 Z"/>
+    <g fill="#f4efe9">
+      <circle cx="39.5" cy="70.5" r="2.4"/>
+      <circle cx="71.5" cy="70.5" r="2.4"/>
+    </g>
+    <!-- a small open mouth, never a hole -->
+    <ellipse cx="58" cy="92" rx="5.5" ry="6.5" fill="#332b28" transform="rotate(-3 58 92)"/>
+    <ellipse cx="58" cy="95.5" rx="3.2" ry="2.6" fill="#dd6b5a"/>
+    <!-- zzz, only where there is room for it -->
+    <g fill="none" stroke="#f4efe9" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 36 H112 L100 24 H112"/>
+    </g>
+    <path fill="none" stroke="#f4efe9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M108 19 H117 L108 10 H117"/>
   </g>
-  <path fill="#c0574a" d="M60 90 C62 87 68 87 71 90 C72 94 68 98 64 97 C60 96 59 93 60 90 Z"/>
 </svg>
