@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect x="4" y="4" width="120" height="120" rx="8" fill="#000000"/>
+  <!-- squinting eyes -->
+  <g stroke="#cccccc" stroke-width="7" stroke-linecap="round">
+    <line x1="42" y1="44" x2="54" y2="44"/>
+    <line x1="74" y1="44" x2="86" y2="44"/>
+  </g>
+  <!-- one big open mouth, tongue hanging out -->
+  <ellipse cx="64" cy="82" rx="21" ry="25" fill="#cccccc"/>
+  <ellipse cx="64" cy="97" rx="12" ry="9" fill="#c0574a"/>
+</svg>
