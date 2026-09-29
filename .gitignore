@@ -9,3 +9,6 @@ web-ext-artifacts/
 .DS_Store
 Thumbs.db
 *.swp
+
+# not part of the extension: personal firefox chrome theme
+userChrome.css
