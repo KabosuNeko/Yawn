@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Yawn">
   <title>Yawn</title>
+  <!-- source of the 48 and 128 pngs. Rendered with:
+       rsvg-convert -w 128 -h 128 images/src/icon.svg -o images/icon128.png
+       rsvg-convert -w 48 -h 48 images/src/icon.svg -o images/icon48.png -->
   <rect x="4" y="4" width="120" height="120" rx="8" fill="#000000"/>
   <g transform="rotate(-3 64 64)">
     <!-- a hand-drawn crescent: two arcs that do not quite agree -->

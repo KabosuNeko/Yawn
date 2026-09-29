@@ -4,5 +4,5 @@
    with different patterns. */
 export default {
   sourceDir: ".",
-  ignoreFiles: ["test", "test/*", "**/test/*", "**/*.test.js", "web-ext-config.mjs", "userChrome.css", "images/*.svg"],
+  ignoreFiles: ["test", "test/*", "**/test/*", "**/*.test.js", "web-ext-config.mjs", "userChrome.css", "images/src"],
 };
