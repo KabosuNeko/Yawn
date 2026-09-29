@@ -5,21 +5,7 @@ const loadJson = async (path) => (await fetch(path)).json();
 
 const [icons, defaults] = await Promise.all([loadJson("./icons.json"), loadJson("./defaults.json")]);
 
-const searchInput = $("#search-input");
-const searchBtn = $("#search-btn");
-const searchEnginesList = $("#search-engines-list");
-const suggestionsList = $("#suggestions-list");
-const settingsPanel = $("#settings-panel");
-const settingsBtn = $("#settings-btn");
-const toast = $("#toast");
-const topSitesContainer = $("#top-website-list-container");
-const topSitesList = $("#top-website-list");
-const topSiteInput = $("#add-top-site-input");
-const addTopSiteBtn = $("#new-top-site-btn");
-const manageTopSitesBtn = $("#manage-top-websites-btn");
-
-/* ------------------------------------------------------------------- state */
-
+/* persisted state, read once at load and written back on change */
 const store = {
   get(key, fallback) {
     try {
@@ -32,6 +18,22 @@ const store = {
     localStorage.setItem(key, JSON.stringify(value));
   },
 };
+
+const searchInput = $("#search-input");
+const searchBtn = $("#search-btn");
+const engineBtn = $("#engine-btn");
+const engineLabel = $("#engine-label");
+const engineMenu = $("#engine-menu");
+const suggestionsList = $("#suggestions-list");
+const settingsPanel = $("#settings-panel");
+const settingsBtn = $("#settings-btn");
+const toast = $("#toast");
+const favoritesSection = $("#favorites-section");
+const favoritesList = $("#favorites");
+const topSiteInput = $("#add-top-site-input");
+const addTopSiteBtn = $("#new-top-site-btn");
+
+/* ------------------------------------------------------------------- state */
 
 const engines = store.get("searchEngines", defaults.searchEngines);
 const settings = store.get("settingsOptions", defaults.settingsOptions);
@@ -129,14 +131,13 @@ const applySetting = (key, isActive) => {
       settingsBtn.tabIndex = isActive ? -1 : 0;
       break;
     case "hideEngines":
-      toggle("#search-engines-list");
+      toggle("#engine-btn");
       break;
     case "hideTopSites":
-      toggle("#top-website-list-container");
-      toggle("#add-top-site-input-container");
+      toggle("#favorites-section");
       break;
     case "hideTopSitesSepar":
-      toggle("#top-website-list-container", "no-separator");
+      toggle("#favorites-section", "no-separator");
       break;
     case "hideSearchButton":
       toggle("#search-btn", "disabled");
@@ -145,7 +146,7 @@ const applySetting = (key, isActive) => {
       toggle("#searchIcon");
       break;
     case "hideSearchInput":
-      toggle("#search-input-wrapper", "minimal");
+      toggle("#bar", "minimal");
       break;
     case "lightmode":
     case "useBrowserTheme":
@@ -175,27 +176,43 @@ const handleSettingChange = (key, isActive) => {
   applySetting(key, isActive);
 };
 
-/* ------------------------------------------------------------------ render */
+/* --------------------------------------------------------- engine picker */
+
+const closeEngineMenu = () => {
+  engineMenu.hidden = true;
+  engineBtn.setAttribute("aria-expanded", "false");
+};
+
+const openEngineMenu = () => {
+  engineMenu.hidden = false;
+  engineBtn.setAttribute("aria-expanded", "true");
+  const selected = engineMenu.querySelector('[aria-selected="true"]') ?? engineMenu.firstElementChild;
+  selected?.focus();
+};
+
+const renderEngineIcon = (engine) => {
+  $("#searchIcon").replaceChildren(
+    el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` }),
+  );
+  engineLabel.textContent = engine.label;
+};
 
 const renderEngines = () => {
-  searchEnginesList.replaceChildren();
+  const active = engines.filter((engine) => engine.active);
+  const listed = active.length ? active : engines;
+  const preferred = engines.find((engine) => engine.preferred) ?? listed[0];
 
-  engines.filter((engine) => engine.active).forEach((engine, index) => {
-    if (index) searchEnginesList.append(el("li", { className: "inactive", textContent: "/" }));
+  renderEngineIcon(preferred);
 
-    const button = el("button", { textContent: engine.label });
-    button.dataset.key = engine.key;
-
-    if (engine.preferred) {
-      button.classList.add("active");
-      button.ariaCurrent = "true";
-      $("#searchIcon").replaceChildren(el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` }));
-    }
-
-    const li = document.createElement("li");
-    li.append(button);
-    searchEnginesList.append(li);
-  });
+  engineMenu.replaceChildren(
+    ...listed.map((engine) => {
+      const option = el("li", { textContent: engine.label, tabIndex: -1 });
+      option.dataset.key = engine.key;
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", String(engine.key === preferred?.key));
+      return option;
+    }),
+  );
 };
 
 const createOption = (option, container) => {
@@ -261,6 +278,8 @@ const selectEngine = (key) => {
   });
   store.set("searchEngines", engines);
   renderEngines();
+  closeEngineMenu();
+  searchInput.focus();
 };
 
 const handleEngineSettingChange = (key, isActive) => {
@@ -329,7 +348,10 @@ const renderSuggestions = async (query) => {
 };
 
 const initSuggestions = () =>
-  searchInput.addEventListener("input", () => renderSuggestions(searchInput.value.trim()));
+  searchInput.addEventListener("input", () => {
+    closeEngineMenu();
+    renderSuggestions(searchInput.value.trim());
+  });
 
 const navigateSuggestions = (key) => {
   const items = [...suggestionsList.querySelectorAll("a")];
@@ -349,7 +371,6 @@ const focusInputAtEnd = () => {
 
 const FAVORITES_KEY = "topSites";
 const MAX_FAVORITES = 8;
-const MAX_TITLE = 15;
 const ADD_PROMPT = { value: "", placeholder: "Add new favourite website link", action: "addNewUrl" };
 
 let favorites = store.get(FAVORITES_KEY, []);
@@ -358,7 +379,12 @@ let editTarget = null; // { id, title, url } being edited
 let pendingDeleteId = null;
 
 const newFavId = () => crypto.randomUUID().slice(0, 8);
-const shorten = (title) => (title.length > MAX_TITLE ? `${title.slice(0, MAX_TITLE)}..` : title);
+
+// the tile letter comes from the site itself: no favicon request is made
+const monogram = (url) => {
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  return (host.match(/[a-z0-9]/i) ?? ["?"])[0].toLowerCase();
+};
 
 const favActionButton = (id, action, icon, title) => {
   const button = el("button", { className: "icon-btn top-site-action-button", title, tabIndex: -1 });
@@ -369,29 +395,34 @@ const favActionButton = (id, action, icon, title) => {
   return button;
 };
 
-const favSeparator = () => {
-  const li = document.createElement("li");
-  li.append(el("span", { textContent: "/" }));
-  return li;
-};
-
 const renderFavorites = () => {
-  const rows = favorites.flatMap((site, index) => {
-    const link = el("a", { href: site.url });
-    link.append(el("span", { textContent: shorten(site.title) }));
+  const tiles = favorites.map((site) => {
+    const link = el("a", {
+      className: "tile-link",
+      href: site.url,
+      title: site.title,
+      textContent: monogram(site.url),
+    });
+    link.setAttribute("aria-label", site.title);
 
-    const actions = el("div", { className: "actions-btns" });
+    const actions = el("div", { className: "tile-actions" });
     actions.append(
-      favActionButton(site.id, "edit", "pen", "edit link"),
-      favActionButton(site.id, "delete", "trash", "delete link"),
+      favActionButton(site.id, "edit", "pen", `edit ${site.title}`),
+      favActionButton(site.id, "delete", "trash", `delete ${site.title}`),
     );
 
-    const row = el("li", { className: "link" });
-    row.append(link, actions);
-    return index ? [favSeparator(), row] : [row];
+    const tile = el("li", { className: "tile" });
+    tile.append(link, actions);
+    return tile;
   });
 
-  topSitesList.replaceChildren(...rows);
+  const addButton = el("button", { className: "icon-btn add-tile", title: "Add favourite website" });
+  addButton.dataset.icon = "plus";
+  addButton.setAttribute("aria-label", "Add favourite website");
+  const addTile = el("li", { className: "tile" });
+  addTile.append(addButton);
+
+  favoritesList.replaceChildren(...tiles, addTile);
   renderIcons();
 };
 
@@ -450,6 +481,7 @@ const submitFavorite = () => {
 
 const startEdit = (id) => {
   editTarget = { ...favorites.find((site) => site.id === id) };
+  favoritesSection.classList.add("adding");
   setInputMode({ value: editTarget.url, placeholder: "Edit Url", action: "editUrl" });
 };
 
@@ -468,12 +500,27 @@ const confirmDelete = () => {
   showToast("Favourite website removed successfully");
 };
 
-const initFavorites = async () => {
-  manageTopSitesBtn.addEventListener("click", () => {
-    topSitesContainer.classList.toggle("edit-mode");
-    setInputMode(ADD_PROMPT, { focus: false });
-  });
+const isAdding = () => favoritesSection.classList.contains("adding");
 
+const openAddForm = () => {
+  favoritesSection.classList.add("adding");
+  setInputMode(ADD_PROMPT);
+};
+
+const closeAddForm = () => {
+  favoritesSection.classList.remove("adding");
+  newFavUrl = null;
+  editTarget = null;
+  setInputMode(ADD_PROMPT, { focus: false });
+};
+
+const cancelDelete = () => {
+  hideToast();
+  document.body.classList.remove("prevent-ui-interactivity");
+  pendingDeleteId = null;
+};
+
+const initFavorites = async () => {
   if (!favorites.length) {
     const browserSites = await api.topSites.get().catch(() => []);
     favorites = browserSites.slice(0, MAX_FAVORITES).map((site) => ({
@@ -485,64 +532,92 @@ const initFavorites = async () => {
   }
   renderFavorites();
 
-  topSiteInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") submitFavorite();
-  });
-  addTopSiteBtn.addEventListener("click", submitFavorite);
+  favoritesList.addEventListener("click", (event) => {
+    if (event.target.closest(".add-tile")) return openAddForm();
 
-  topSitesList.addEventListener("click", (event) => {
     const button = event.target.closest(".top-site-action-button");
     if (!button) return;
     if (button.dataset.action === "edit") startEdit(button.dataset.id);
     else requestDelete(button.dataset.id);
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (pendingDeleteId === null) return;
-    if (event.key === "Enter") confirmDelete();
-    else if (event.key === "Escape") {
-      hideToast();
-      document.body.classList.remove("prevent-ui-interactivity");
-      pendingDeleteId = null;
-    }
+  topSiteInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") submitFavorite();
   });
+  addTopSiteBtn.addEventListener("click", submitFavorite);
 };
 
 /* -------------------------------------------------------------------- init */
 
 const initGlobalListeners = () => {
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeSettingsPanel();
+    const inEngineMenu = engineMenu.contains(document.activeElement);
+
+    if (event.key === "Escape") {
+      if (!engineMenu.hidden) return closeEngineMenu();
+      if (pendingDeleteId !== null) return cancelDelete();
+      if (isAdding()) return closeAddForm();
+      closeSettingsPanel();
+      return;
+    }
 
     if (event.altKey && event.key.toLowerCase() === "s") {
       event.preventDefault();
       toggleSettingsPanel();
+      return;
     }
 
     if (event.key === "/" && !["search-input", "add-top-site-input"].includes(document.activeElement.id)) {
       event.preventDefault();
       searchInput.focus();
+      return;
     }
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") navigateSuggestions(event.key);
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (!inEngineMenu) navigateSuggestions(event.key);
+      return;
+    }
 
-    if (event.key === "Enter" && event.target === searchInput) performSearch(searchInput.value.trim());
+    if (event.key === "Enter") {
+      if (inEngineMenu) {
+        const option = document.activeElement.closest("li[data-key]");
+        if (option) selectEngine(option.dataset.key);
+        return;
+      }
+      if (pendingDeleteId !== null) return confirmDelete();
+      if (event.target === searchInput) performSearch(searchInput.value.trim());
+    }
   });
 
   searchBtn.addEventListener("click", () => performSearch(searchInput.value.trim()));
 
   settingsBtn.addEventListener("click", toggleSettingsPanel);
 
-  document.addEventListener("click", (event) => {
-    const outside = !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target);
-    if (outside && !settingsPanel.classList.contains("hidden")) closeSettingsPanel();
+  engineBtn.addEventListener("click", () => {
+    if (engineMenu.hidden) openEngineMenu();
+    else closeEngineMenu();
   });
 
-  searchEnginesList.addEventListener("click", (event) => {
-    const button = event.target.closest("button");
-    if (!button) return;
-    selectEngine(button.dataset.key);
-    searchInput.focus();
+  engineMenu.addEventListener("click", (event) => {
+    const option = event.target.closest("li[data-key]");
+    if (option) selectEngine(option.dataset.key);
+  });
+
+  engineMenu.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const options = [...engineMenu.children];
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    const next = options[options.indexOf(document.activeElement) + step] ?? options[step === 1 ? 0 : -1];
+    next?.focus();
+  });
+
+  document.addEventListener("click", (event) => {
+    const inMenu = engineBtn.contains(event.target) || engineMenu.contains(event.target);
+    if (!engineMenu.hidden && !inMenu) closeEngineMenu();
+
+    const outside = !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target);
+    if (outside && !settingsPanel.classList.contains("hidden")) closeSettingsPanel();
   });
 
   [
@@ -558,13 +633,11 @@ const initGlobalListeners = () => {
     event.target.closest(".suggestion-link")?.classList.add("loading");
   });
 
-  // let the cursor wheel scroll the horizontal lists
-  [searchEnginesList, topSitesList].forEach((list) =>
-    list.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      list.scrollLeft += event.deltaY;
-    }),
-  );
+  // let the cursor wheel scroll the favourite tiles
+  favoritesList.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    favoritesList.scrollLeft += event.deltaY;
+  });
 };
 
 const init = async () => {

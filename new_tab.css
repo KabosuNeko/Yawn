@@ -1,10 +1,9 @@
 /* ------------------------------------------------------------------ tokens */
 :root {
-  /* The four palette variables are also written at runtime by theme.js
-     (dark default here, light / browser theme override them). */
+  /* the four palette variables are written at runtime by theme.js */
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 80%);
-  --foreground50: hsl(0, 0%, 60%); /* muted text and hairlines */
+  --foreground50: hsl(0, 0%, 60%); /* muted text, borders */
   --foreground75: hsl(0, 0%, 12%); /* hover surface */
 
   /* type */
@@ -27,8 +26,9 @@
   /* geometry */
   --width: 34rem;
   --radius: 4px;
-  --icon: 1.5rem;
-  --row: 2.5rem;
+  --bar: 2.75rem;
+  --tile: 2rem;
+  --panel-width: 21rem;
 
   /* motion */
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
@@ -75,13 +75,19 @@ button {
   cursor: pointer;
 }
 
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 :focus-visible {
   outline: 1px solid var(--foreground);
   outline-offset: 2px;
   border-radius: var(--radius);
 }
 
-/* State hooks used by new_tab.js */
+/* state hooks written by new_tab.js */
 .hidden {
   display: none !important;
 }
@@ -94,17 +100,15 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--icon);
-  height: var(--icon);
-  aspect-ratio: 1;
+  width: 1.5rem;
+  height: 1.5rem;
   flex: none;
   opacity: 0.5;
   transition: opacity var(--fast) var(--ease);
 }
 
 .icon-btn:hover,
-.icon-btn:focus-visible,
-.icon-btn:focus-within {
+.icon-btn:focus-visible {
   opacity: 1;
 }
 
@@ -116,67 +120,35 @@ button {
   stroke-width: 1.5;
 }
 
-/* ------------------------------------------------------------- the column */
-#search-container {
+/* --------------------------------------------------------------- the page */
+#app {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
   width: min(92vw, var(--width));
 }
 
-/* Input rows: search and "add favourite". Shared hairline + focus accent. */
-#search-input-wrapper,
-#add-top-site-input-container {
+/* ------------------------------------------------------------ command bar */
+#bar {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  height: var(--row);
-  padding-inline: var(--sp-2);
-  border-bottom: 1px solid var(--foreground50);
-  transition: border-color var(--base) var(--ease);
+  height: var(--bar);
+  padding-inline: var(--sp-3);
+  border: 1px solid var(--foreground50);
+  border-radius: 6px;
+  transition: border-color var(--fast) var(--ease);
 }
 
-/* the 1px accent that grows left to right while the row holds focus */
-#search-input-wrapper::after,
-#add-top-site-input-container::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: -1px;
-  height: 1px;
-  background: var(--foreground);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--base) var(--ease);
+#bar:focus-within {
+  border-color: var(--foreground);
 }
 
-#search-input-wrapper:focus-within,
-#add-top-site-input-container:focus-within {
-  border-bottom-color: transparent;
-}
-
-#search-input-wrapper:focus-within::after,
-#add-top-site-input-container:focus-within::after {
-  transform: scaleX(1);
-}
-
-#search-input-wrapper input,
-#add-top-site-input-container input {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  padding-block: 0;
-  outline: none;
-  color: var(--foreground);
-  caret-color: var(--foreground);
-}
-
-#search-input-wrapper input {
-  padding-inline-end: var(--sp-6);
-}
-
-#search-input-wrapper input::placeholder,
-#add-top-site-input-container input::placeholder {
-  color: var(--foreground50);
+/* "Hide search input" setting: the box loses its outline */
+#bar.minimal {
+  border-color: transparent;
 }
 
 #searchIcon {
@@ -191,48 +163,32 @@ button {
   object-fit: contain;
 }
 
-/* "hide search input" setting: hairline off, a caret tick marks the row */
-#search-input-wrapper.minimal {
-  border-bottom-color: transparent;
+#search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  outline: none;
+  color: var(--foreground);
+  caret-color: var(--foreground);
 }
 
-#search-input-wrapper.minimal input {
-  padding-inline-start: var(--sp-3);
-}
-
-#search-input-wrapper.minimal::before {
-  content: "";
-  position: absolute;
-  left: var(--sp-2);
-  bottom: 0;
-  width: 1px;
-  height: 1rem;
-  background: var(--foreground);
-  transform-origin: bottom;
-  transition: transform var(--base) var(--ease);
-}
-
-#search-input-wrapper.minimal:focus-within::before {
-  transform: scaleY(0);
+#search-input::placeholder {
+  color: var(--foreground50);
 }
 
 #search-btn {
-  position: absolute;
-  right: var(--sp-1);
-  top: 50%;
-  transform: translateY(-50%);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--fast) var(--ease);
 }
 
-#search-input-wrapper:focus-within #search-btn {
+#bar:focus-within #search-btn {
   opacity: 0.5;
   pointer-events: auto;
 }
 
-#search-input-wrapper:focus-within #search-btn:hover,
-#search-input-wrapper:focus-within #search-btn:focus-visible {
+#bar:focus-within #search-btn:hover,
+#bar:focus-within #search-btn:focus-visible {
   opacity: 1;
 }
 
@@ -240,182 +196,81 @@ button {
   display: none !important;
 }
 
-/* ------------------------------------------------- engine list + favourites */
-#search-engines-list,
-#top-website-list {
+/* engine picker, inside the bar */
+#engine-btn {
   display: flex;
   align-items: center;
   gap: var(--sp-1);
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  padding: var(--sp-2) var(--sp-1);
-  list-style: none;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-#search-engines-list::-webkit-scrollbar,
-#top-website-list::-webkit-scrollbar {
-  display: none;
-}
-
-#search-engines-list li,
-#top-website-list li {
   flex: none;
-}
-
-#search-engines-list li {
-  color: var(--foreground50);
-}
-
-/* engine chips and favourite links share one text treatment */
-#search-engines-list li button,
-#top-website-list a,
-#top-website-list-container button {
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius);
+  height: 100%;
+  padding-inline: var(--sp-3);
+  margin-inline-end: calc(var(--sp-3) * -1);
+  border-inline-start: 1px solid var(--foreground50);
+  border-start-end-radius: 6px;
+  border-end-end-radius: 6px;
   font-size: var(--text-sm);
   color: var(--foreground50);
-  text-decoration: none;
-  white-space: nowrap;
   transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
-#search-engines-list li button:hover,
-#search-engines-list li button:focus-visible,
-#top-website-list a:hover,
-#top-website-list a:focus-visible,
-#top-website-list-container button:hover,
-#top-website-list-container button:focus-visible {
+#engine-btn:hover,
+#engine-btn:focus-visible,
+#engine-btn[aria-expanded="true"] {
   color: var(--foreground);
   background: var(--foreground75);
 }
 
-#search-engines-list li button.active {
-  color: var(--foreground);
-}
-
-/* the "/" between engines and between favourites */
-#search-engines-list li.inactive {
-  color: var(--foreground50);
-  pointer-events: none;
-}
-
-#top-website-list {
-  gap: 0;
-}
-
-#top-website-list li.link {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  padding-inline: var(--sp-1);
-}
-
-#top-website-list .actions-btns {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--fast) var(--ease);
-}
-
-#top-website-list .actions-btns button,
-#top-website-list .actions-btns button svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-#top-website-list-container.edit-mode .actions-btns,
-#top-website-list li.link:focus-within .actions-btns {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#top-website-list-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  background: var(--background);
-  border-top: 1px solid var(--foreground50);
-  z-index: 1;
-}
-
-#top-website-list-container.no-separator {
-  border-top-color: transparent;
-}
-
-#manage-top-websites-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  flex: none;
-  opacity: 0.35;
-  transition: opacity var(--fast) var(--ease);
-}
-
-#manage-top-websites-btn:hover,
-#manage-top-websites-btn:focus-visible,
-#top-website-list-container:hover #manage-top-websites-btn,
-#top-website-list-container:focus-within #manage-top-websites-btn {
-  opacity: 1;
-}
-
-#manage-top-websites-btn span {
+#engine-btn .caret {
   font-size: var(--text-sm);
+  opacity: 0.8;
+  line-height: 1;
 }
 
-#manage-top-websites-btn .icon-btn {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* hidden until edit-mode; pointer-events off so it never eats a click */
-#add-top-site-input-container {
+#engine-menu {
   position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(100%);
-  transition: transform var(--base) var(--ease), opacity var(--fast) linear;
+  top: calc(100% + var(--sp-1));
+  right: 0;
+  min-width: 11rem;
+  padding: var(--sp-1);
+  border: 1px solid var(--foreground50);
+  border-radius: var(--radius);
+  background: var(--background);
+  z-index: 4;
 }
 
-#top-website-list-container.edit-mode + #add-top-site-input-container {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(115%);
+#engine-menu li {
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  color: var(--foreground50);
+  cursor: pointer;
+}
+
+#engine-menu li:hover,
+#engine-menu li:focus-visible {
+  background: var(--foreground75);
+  color: var(--foreground);
+  outline: none;
+}
+
+#engine-menu li[aria-selected="true"] {
+  color: var(--foreground);
 }
 
 /* ------------------------------------------------------------ suggestions */
 #suggestions-list {
   position: absolute;
   inset-inline: 0;
-  top: var(--row);
-  margin: 0;
-  padding: var(--sp-2) 0 0;
-  list-style: none;
+  top: calc(var(--bar) + var(--sp-3));
+  padding: var(--sp-1);
+  border: 1px solid var(--foreground50);
+  border-radius: var(--radius);
   background: var(--background);
-  z-index: 2;
+  z-index: 3;
 }
 
-/* while suggestions are open they take the engine row's place */
-#search-container:has(#suggestions-list:not(:empty)) #search-engines-list {
-  visibility: hidden;
-}
-
-#suggestions-list li {
-  text-align: start;
-}
-
-#suggestions-list li + li {
-  border-top: 1px solid var(--foreground75);
+#suggestions-list:empty {
+  display: none;
 }
 
 #suggestions-list a {
@@ -434,8 +289,8 @@ button {
 }
 
 #suggestions-list a span {
-  color: var(--foreground50);
   overflow: hidden;
+  color: var(--foreground50);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -487,13 +342,123 @@ button {
   }
 }
 
+/* ------------------------------------------------------------- favourites */
+#favorites-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border-top: 1px solid var(--foreground50);
+  padding-top: var(--sp-3);
+}
+
+#favorites-section.no-separator {
+  border-top-color: transparent;
+}
+
+#favorites {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#favorites::-webkit-scrollbar {
+  display: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.tile-link,
+.add-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tile);
+  height: var(--tile);
+  border: 1px solid var(--foreground50);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  color: var(--foreground50);
+  text-decoration: none;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.add-tile {
+  border-style: dashed;
+}
+
+.tile-link:hover,
+.tile-link:focus-visible,
+.add-tile:hover,
+.add-tile:focus-visible {
+  border-color: var(--foreground);
+  background: var(--foreground75);
+  color: var(--foreground);
+}
+
+/* edit and delete appear on hover or keyboard focus, and take no width at rest */
+.tile-actions {
+  display: flex;
+  gap: var(--sp-1);
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width var(--base) var(--ease), opacity var(--fast) linear;
+}
+
+.tile:hover .tile-actions,
+.tile:focus-within .tile-actions {
+  width: 2.25rem;
+  opacity: 1;
+}
+
+.tile-actions .icon-btn {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* add / edit row, only while the add tile is active */
+#add-top-site-input-container {
+  display: none;
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--bar);
+  padding-inline: var(--sp-2);
+  border-bottom: 1px solid var(--foreground50);
+}
+
+#favorites-section.adding #add-top-site-input-container {
+  display: flex;
+}
+
+#add-top-site-input-container input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding-block: 0;
+  outline: none;
+  color: var(--foreground);
+  caret-color: var(--foreground);
+}
+
+#add-top-site-input-container input::placeholder {
+  color: var(--foreground50);
+}
+
 /* --------------------------------------------------------------- settings */
 #settings-trigger {
   position: fixed;
   right: 0;
   bottom: 0;
-  width: 9rem;
-  height: 9rem;
+  width: 8rem;
+  height: 8rem;
   display: flex;
   align-items: end;
   justify-content: end;
@@ -514,27 +479,27 @@ button {
 
 #settings-panel {
   position: fixed;
-  right: var(--sp-4);
-  bottom: var(--sp-4);
-  max-height: calc(100vh - var(--sp-6));
-  overflow-y: auto;
-  padding: var(--sp-4);
-  border: 1px solid var(--foreground50);
-  border-radius: var(--radius);
+  inset-block: 0;
+  right: 0;
+  width: min(var(--panel-width), 88vw);
+  padding: var(--sp-6) var(--sp-4) var(--sp-4);
+  border-inline-start: 1px solid var(--foreground50);
   background: var(--background);
+  overflow-y: auto;
   z-index: 9;
+  animation: panel-in var(--base) var(--ease);
+}
+
+@keyframes panel-in {
+  from {
+    transform: translateX(100%);
+  }
 }
 
 #settings-panel h2 {
   font-size: var(--text-lg);
   font-weight: 700;
   letter-spacing: -0.01em;
-}
-
-#settings-panel ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 #settings-panel li {
@@ -639,40 +604,42 @@ button {
   border-radius: var(--radius);
   background: var(--background);
   font-size: var(--text-sm);
-  z-index: 9;
+  z-index: 10;
 }
 
 /* ------------------------------------------------------------- narrow view */
 @media (max-width: 32rem) {
-  /* the engine row right below already shows which engine is active */
-  #searchIcon {
-    display: none;
+  :root {
+    --bar: 2.5rem;
+    --tile: 1.75rem;
   }
 
-  #search-input-wrapper input,
-  #add-top-site-input-container input {
-    font-size: var(--text-sm);
+  #app {
+    width: 100%;
   }
 
-  #search-engines-list,
-  #top-website-list {
-    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  #bar {
+    padding-inline: var(--sp-2);
+  }
+
+  #engine-btn {
+    padding-inline: var(--sp-2) var(--sp-2);
+    margin-inline-end: calc(var(--sp-2) * -1);
   }
 
   #settings-panel {
-    right: var(--sp-3);
-    left: var(--sp-3);
-    bottom: var(--sp-3);
+    width: 100%;
+    border-inline-start: 0;
   }
 
   #settings-trigger {
-    width: 6rem;
-    height: 6rem;
+    width: 5rem;
+    height: 5rem;
     padding: var(--sp-3);
   }
 
-  #suggestions-list a {
-    padding-inline: var(--sp-1);
+  #favorites {
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
   }
 }
 

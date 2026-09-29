@@ -8,68 +8,74 @@
   </head>
 
   <body>
-    <section id="search-container">
-      <!-- Search Input -->
-      <div id="search-input-wrapper">
-        <i id="searchIcon"></i>
-        <input type="text" id="search-input" />
+    <main id="app">
+      <!-- command bar: engine logo, input, search, engine picker -->
+      <div id="bar">
+        <i id="searchIcon" aria-hidden="true"></i>
+        <input
+          type="text"
+          id="search-input"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search or enter an address"
+        />
         <button
           id="search-btn"
           class="icon-btn"
           data-icon="search"
           aria-label="Search"
         ></button>
+        <button id="engine-btn" aria-haspopup="listbox" aria-expanded="false">
+          <span id="engine-label"></span>
+          <span class="caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <ul id="engine-menu" role="listbox" aria-label="Search engine" hidden></ul>
       </div>
-
-      <!-- Search Engines -->
-      <ul id="search-engines-list" tabindex="-1"></ul>
 
       <!-- suggestions -->
       <ul id="suggestions-list"></ul>
-      <!-- Top websites -->
-      <div id="top-website-list-container">
-        <ul id="top-website-list" tabindex="-1"></ul>
-        <button id="manage-top-websites-btn">
-          <span>Manage</span>
-          <span class="icon-btn" data-icon="pen"></span>
-        </button>
-      </div>
-      <div id="add-top-site-input-container">
-        <input
-          type="url"
-          id="add-top-site-input"
-          placeholder="Add new favourite website link"
-          data-action="addNewUrl"
-        />
-        <button
-          data-icon="plus"
-          id="new-top-site-btn"
-          class="icon-btn"
-        ></button>
-      </div>
-    </section>
 
-    <!-- Settings -->
+      <!-- favourite websites -->
+      <section id="favorites-section">
+        <ul id="favorites"></ul>
+        <div id="add-top-site-input-container">
+          <input
+            type="url"
+            id="add-top-site-input"
+            placeholder="Add new favourite website link"
+            data-action="addNewUrl"
+            aria-label="Favourite website address"
+          />
+          <button
+            id="new-top-site-btn"
+            class="icon-btn"
+            data-icon="plus"
+            aria-label="Save favourite"
+          ></button>
+        </div>
+      </section>
+    </main>
+
+    <!-- settings -->
     <section id="settings-container">
-      <!-- settings panel trigger -->
       <div id="settings-trigger">
         <button
           id="settings-btn"
           class="icon-btn"
           data-icon="settings"
-          aria-label="settings"
-          title="open settings"
+          aria-label="Settings"
+          title="Settings (alt+s)"
         ></button>
       </div>
 
-      <!-- settings list -->
-      <div id="settings-panel" class="hidden">
+      <aside id="settings-panel" class="hidden" aria-label="Settings">
         <h2>Settings</h2>
         <div class="separator"></div>
         <ul id="settings-options"></ul>
         <div class="separator"></div>
         <ul id="settings-search-engines"></ul>
-      </div>
+      </aside>
+
       <div id="toast" class="hidden" role="status" aria-live="polite"></div>
     </section>
 
