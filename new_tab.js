@@ -30,7 +30,9 @@ const suggestionsList = $("#suggestions-list");
 const settingsPanel = $("#settings-panel");
 const settingsBtn = $("#settings-btn");
 const toast = $("#toast");
+const clockBlock = $("#clock-block");
 const clock = $("#clock");
+const dateEl = $("#date");
 const favoritesSection = $("#favorites-section");
 const favoritesList = $("#favorites");
 const topSiteInput = $("#add-top-site-input");
@@ -48,7 +50,15 @@ if (!engines.length) {
   engines.push(...defaults.searchEngines.map((engine) => ({ ...engine })));
   store.set("searchEngines", engines);
 }
-const settings = store.get("settingsOptions", defaults.settingsOptions);
+
+/* a version can add settings: keep the value the user has for a key, take the
+   label, group and default from defaults.json for everything else, and drop
+   keys that no longer exist */
+const savedSettings = store.get("settingsOptions", null);
+const settings = defaults.settingsOptions.map((option) => {
+  const saved = savedSettings?.find((candidate) => candidate.key === option.key);
+  return saved ? { ...option, active: saved.active } : { ...option };
+});
 const userTheme = { light: false, browser: false };
 
 /* ------------------------------------------------------------------- clock */
@@ -63,17 +73,22 @@ const paintClock = () => {
       ? { hour: "numeric", minute: "2-digit", hour12: true }
       : { hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
   );
-  if (clock.textContent !== text) {
-    clock.textContent = text;
-    clock.dateTime = now.toISOString();
-    clock.title = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  }
+  if (clock.textContent === text) return;
+
+  const full = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  clock.textContent = text;
+  clock.dateTime = now.toISOString();
+  clock.title = full;
+
+  dateEl.textContent = now.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+  dateEl.dateTime = now.toISOString().slice(0, 10);
+  dateEl.title = full;
 };
 
 const startClock = () => {
   paintClock();
   setInterval(() => {
-    if (!clock.classList.contains("hidden")) paintClock();
+    if (!clockBlock.classList.contains("hidden")) paintClock();
   }, 1000);
 };
 
@@ -246,7 +261,7 @@ const applySetting = (key, isActive) => {
       toggle("#bar", "minimal");
       break;
     case "showClock":
-      clock.classList.toggle("hidden", !isActive);
+      clockBlock.classList.toggle("hidden", !isActive);
       break;
     case "clock12":
       paintClock();

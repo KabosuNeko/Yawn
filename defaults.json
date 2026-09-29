@@ -120,7 +120,7 @@
       "group": "Favourites"
     },
     {
-      "label": "Show clock",
+      "label": "Show clock and date",
       "active": true,
       "key": "showClock",
       "group": "Clock"
