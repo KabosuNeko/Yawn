@@ -41,6 +41,11 @@ const resetButton = $("#reset-btn");
 /* ------------------------------------------------------------------- state */
 
 const engines = store.get("searchEngines", defaults.searchEngines);
+// storage could be empty (cleared, corrupted): fall back and heal it
+if (!engines.length) {
+  engines.push(...defaults.searchEngines.map((engine) => ({ ...engine })));
+  store.set("searchEngines", engines);
+}
 const settings = store.get("settingsOptions", defaults.settingsOptions);
 const userTheme = { light: false, browser: false };
 
@@ -276,6 +281,15 @@ const ENGINE_BANGS = {
 
 const bangOf = (engine) => engine.bang ?? ENGINE_BANGS[engine.key] ?? engine.key.slice(0, 2);
 
+// a custom engine must not steal a bang that is already in use
+const uniqueBang = (key) => {
+  const taken = new Set(engines.map((engine) => bangOf(engine)));
+  let bang = ENGINE_BANGS[key] ?? key.slice(0, 2);
+  for (let n = 3; taken.has(bang) && n <= key.length; n += 1) bang = key.slice(0, n);
+  for (let n = 2; taken.has(bang); n += 1) bang = `${key.slice(0, 4)}${n}`;
+  return bang;
+};
+
 /* custom engines live in the same array as the shipped ones, marked so the
    settings list can offer to remove them */
 const engineSlug = (label) => {
@@ -287,12 +301,13 @@ const engineSlug = (label) => {
 
 const addCustomEngine = () => {
   const label = engineLabelInput.value.trim();
-  const url = engineUrlInput.value.trim();
+  const url = toUrl(engineUrlInput.value.trim());
 
   if (!label || !url) return showToast("Enter a name and a search url");
-  if (!toUrl(url)) return showToast("Search url must be an https address");
+  if (!/^https?:/.test(url.href)) return showToast("Search url must be an https address");
 
-  engines.push({ key: engineSlug(label), label, url, active: true, preferred: false, custom: true });
+  const key = engineSlug(label);
+  engines.push({ key, label, url: url.href, bang: uniqueBang(key), active: true, preferred: false, custom: true });
   store.set("searchEngines", engines);
   engineLabelInput.value = "";
   engineUrlInput.value = "";
@@ -327,16 +342,19 @@ const openEngineMenu = () => {
 };
 
 const renderEngineIcon = (engine) => {
-  $("#searchIcon").replaceChildren(
-    el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` }),
-  );
+  if (!engine) return;
+  // shipped engines have a logo file, custom ones get a letter instead
+  const icon = engine.custom
+    ? el("span", { className: "engine-mark", textContent: engine.label.slice(0, 1).toLowerCase() })
+    : el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` });
+  $("#searchIcon").replaceChildren(icon);
   engineLabel.textContent = engine.label;
 };
 
 const renderEngines = () => {
   const active = engines.filter((engine) => engine.active);
   const listed = active.length ? active : engines;
-  const preferred = engines.find((engine) => engine.preferred) ?? listed[0];
+  const preferred = listed.find((engine) => engine.preferred) ?? listed[0];
 
   renderEngineIcon(preferred);
 
@@ -378,11 +396,13 @@ const createOption = (option, container, onRemove = null) => {
 const renderSettings = () => {
   const settingsContainer = $("#settings-options");
   const enginesContainer = $("#settings-search-engines");
+  const scrollTop = settingsPanel.scrollTop;
   settingsContainer.replaceChildren();
   enginesContainer.replaceChildren();
   settings.forEach((option) => createOption(option, settingsContainer));
   createOption({ ...HISTORY_OPTION, active: false }, settingsContainer);
   engines.forEach((option) => createOption(option, enginesContainer, option.custom ? removeCustomEngine : null));
+  settingsPanel.scrollTop = scrollTop;
   syncHistoryOption();
   renderIcons();
 };
@@ -398,6 +418,12 @@ const toggleSettingsPanel = () => {
 };
 
 /* ------------------------------------------------------------------ search */
+
+// a search url with the query in it: "%s" is substituted, otherwise appended
+const searchTarget = (engine, term) => {
+  const encoded = encodeURIComponent(term);
+  return engine.url.includes("%s") ? engine.url.replace("%s", () => encoded) : engine.url + encoded;
+};
 
 // an http(s) url, a bare host promoted to https, or null
 const toUrl = (value) => {
@@ -435,8 +461,12 @@ const performSearch = (query) => {
     return;
   }
 
-  const engine = wanted ?? engines.find((e) => e.preferred) ?? engines[0];
-  if (engine) location.href = engine.url + encodeURIComponent(term);
+  const engine =
+    wanted ??
+    engines.find((candidate) => candidate.preferred && candidate.active) ??
+    engines.find((candidate) => candidate.active) ??
+    engines[0];
+  if (engine) location.href = searchTarget(engine, term);
 };
 
 const selectEngine = (key) => {
@@ -455,6 +485,12 @@ const handleEngineSettingChange = (key, isActive) => {
   if (!engine) return;
   engine.active = isActive;
   if (isActive) engines.forEach((e) => (e.preferred = e.key === key));
+  // the engine you search with has to stay one that is switched on
+  if (!isActive && engine.preferred) {
+    engine.preferred = false;
+    const next = engines.find((candidate) => candidate.active);
+    if (next) next.preferred = true;
+  }
   store.set("searchEngines", engines);
   renderEngines();
 };
@@ -483,9 +519,18 @@ const getSuggestions = async (query) => {
   const matches = (site) =>
     site.title && (site.title.toLowerCase().includes(needle) || site.url.toLowerCase().includes(needle));
 
+  // the same site can arrive as both a top site and a history entry, sometimes
+  // with a www prefix or a trailing slash, so dedupe on the normalised url
+  const siteKey = (url) => url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "").toLowerCase();
   const seen = new Set();
   return [...topSites.filter(matches), ...historyItems]
-    .filter((site) => site.url && !seen.has(site.url) && seen.add(site.url))
+    .filter((site) => {
+      if (!site.url) return false;
+      const key = siteKey(site.url);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(0, 6);
 };
 
