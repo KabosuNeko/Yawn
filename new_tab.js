@@ -188,6 +188,23 @@ const handleSettingChange = (key, isActive) => {
 
 /* --------------------------------------------------------- engine picker */
 
+/* short prefixes you can type in front of a query: "!g linux" searches Google
+   once, "!g" on its own switches the engine. Keys are the shipped engines, any
+   other engine falls back to its first two letters. */
+const ENGINE_BANGS = {
+  startpage: "s",
+  google: "g",
+  duckduckgo: "ddg",
+  brave: "b",
+  bing: "bi",
+  perplexity: "p",
+  mistral: "m",
+  gemini: "gem",
+  chatgpt: "c",
+};
+
+const bangOf = (engine) => engine.bang ?? ENGINE_BANGS[engine.key] ?? engine.key.slice(0, 2);
+
 const closeEngineMenu = () => {
   engineMenu.hidden = true;
   engineBtn.setAttribute("aria-expanded", "false");
@@ -216,10 +233,14 @@ const renderEngines = () => {
 
   engineMenu.replaceChildren(
     ...listed.map((engine) => {
-      const option = el("li", { textContent: engine.label, tabIndex: -1 });
+      const option = el("li", { tabIndex: -1 });
       option.dataset.key = engine.key;
       option.setAttribute("role", "option");
       option.setAttribute("aria-selected", String(engine.key === preferred?.key));
+      option.append(
+        el("span", { textContent: engine.label }),
+        el("span", { className: "bang", textContent: `!${bangOf(engine)}` }),
+      );
       return option;
     }),
   );
@@ -272,13 +293,29 @@ const toUrl = (value) => {
 
 const performSearch = (query) => {
   if (!query) return;
-  const url = toUrl(query);
+
+  const [head, ...tail] = query.split(/\s+/);
+  const bang = head.startsWith("!") ? head.slice(1).toLowerCase() : null;
+  const wanted = bang ? engines.find((engine) => bangOf(engine) === bang) : null;
+
+  // "!g" alone switches the engine instead of searching for it
+  if (wanted && !tail.length) {
+    selectEngine(wanted.key);
+    searchInput.value = "";
+    suggestionsList.replaceChildren();
+    showToast(`Search engine: ${wanted.label}`);
+    return;
+  }
+
+  const term = wanted ? tail.join(" ") : query;
+  const url = toUrl(term);
   if (url) {
     location.href = url.href;
     return;
   }
-  const engine = engines.find((e) => e.preferred) ?? engines[0];
-  if (engine) location.href = engine.url + encodeURIComponent(query);
+
+  const engine = wanted ?? engines.find((e) => e.preferred) ?? engines[0];
+  if (engine) location.href = engine.url + encodeURIComponent(term);
 };
 
 const selectEngine = (key) => {
@@ -563,6 +600,11 @@ const initGlobalListeners = () => {
       if (!engineMenu.hidden) return closeEngineMenu();
       if (pendingDeleteId !== null) return cancelDelete();
       if (isAdding()) return closeAddForm();
+      if (searchInput.value) {
+        searchInput.value = "";
+        suggestionsList.replaceChildren();
+        return;
+      }
       closeSettingsPanel();
       return;
     }
@@ -624,6 +666,9 @@ const initGlobalListeners = () => {
 
     const outside = !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target);
     if (outside && !settingsPanel.classList.contains("hidden")) closeSettingsPanel();
+
+    // a click anywhere that is not a control puts the caret back in the bar
+    if (!event.target.closest("a, button, input, textarea, #settings-panel")) searchInput.focus();
   });
 
   [

@@ -246,11 +246,19 @@ ul {
 }
 
 #engine-menu li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
   padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius);
   font-size: var(--text-sm);
   color: var(--foreground50);
   cursor: pointer;
+}
+
+#engine-menu .bang {
+  color: var(--foreground50);
+  opacity: 0.75;
 }
 
 #engine-menu li:hover,
