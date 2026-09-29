@@ -82,28 +82,38 @@ const LIGHT_COLORS = {
   "--background": "#ffffff",
   "--foreground": "hsl(0, 0%, 10%)",
   "--foreground50": "hsl(0, 0%, 42%)",
-  "--foreground75": "hsl(0, 0%, 92%)",
 };
 
 const DARK_COLORS = {
   "--background": "#000000",
   "--foreground": "hsl(0, 0%, 80%)",
   "--foreground50": "hsl(0, 0%, 60%)",
-  "--foreground75": "hsl(0, 0%, 12%)",
 };
+
+/* A theme may only style the toolbar: every role walks a chain of keys and
+   anything it does not provide keeps the built in palette value. Hairlines and
+   the hover surface are derived in CSS, so themes never need to supply them. */
+const THEME_ROLE_KEYS = {
+  "--background": ["ntp_background", "toolbar", "frame"],
+  "--foreground": ["ntp_text", "toolbar_text", "tab_text"],
+  "--foreground50": ["icons"],
+};
+
+const pickThemeColors = (themeColors) =>
+  Object.fromEntries(
+    Object.entries(THEME_ROLE_KEYS).flatMap(([name, keys]) => {
+      const value = keys.map((key) => themeColors?.[key]).find(Boolean);
+      return value ? [[name, value]] : [];
+    }),
+  );
 
 const applyTheme = async () => {
   let colors = userTheme.light ? LIGHT_COLORS : DARK_COLORS;
 
   // ponytail: chrome has no theme api, the browser theme is firefox only
   if (!userTheme.light && userTheme.browser && api.theme) {
-    const { colors: browserColors } = await api.theme.getCurrent();
-    colors = {
-      "--background": browserColors.ntp_background,
-      "--foreground": browserColors.ntp_text,
-      "--foreground50": browserColors.icons,
-      "--foreground75": browserColors.ntp_card_background,
-    };
+    const theme = await api.theme.getCurrent();
+    colors = { ...colors, ...pickThemeColors(theme?.colors) };
   }
 
   for (const [name, value] of Object.entries(colors)) {

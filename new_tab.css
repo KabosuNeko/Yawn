@@ -1,10 +1,14 @@
 /* ------------------------------------------------------------------ tokens */
 :root {
-  /* the four palette variables are written at runtime by theme.js */
+  /* the palette variables are written at runtime by new_tab.js */
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 80%);
-  --foreground50: hsl(0, 0%, 60%); /* muted text, borders */
-  --foreground75: hsl(0, 0%, 12%); /* hover surface */
+  --foreground50: hsl(0, 0%, 60%); /* muted text; a theme may override it */
+
+  /* Derived from the foreground, so a theme that only styles the toolbar still
+     gets usable hairlines and a hover surface without providing those keys. */
+  --hairline: color-mix(in srgb, var(--foreground) 50%, transparent);
+  --surface: color-mix(in srgb, var(--foreground) 12%, transparent);
 
   /* type */
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -137,7 +141,7 @@ ul {
   gap: var(--sp-2);
   height: var(--bar);
   padding-inline: var(--sp-3);
-  border: 1px solid var(--foreground50);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
   transition: border-color var(--fast) var(--ease);
 }
@@ -205,7 +209,7 @@ ul {
   height: 100%;
   padding-inline: var(--sp-3);
   margin-inline-end: calc(var(--sp-3) * -1);
-  border-inline-start: 1px solid var(--foreground50);
+  border-inline-start: 1px solid var(--hairline);
   border-start-end-radius: 6px;
   border-end-end-radius: 6px;
   font-size: var(--text-sm);
@@ -217,7 +221,7 @@ ul {
 #engine-btn:focus-visible,
 #engine-btn[aria-expanded="true"] {
   color: var(--foreground);
-  background: var(--foreground75);
+  background: var(--surface);
 }
 
 #engine-btn .caret {
@@ -232,7 +236,7 @@ ul {
   right: 0;
   min-width: 11rem;
   padding: var(--sp-1);
-  border: 1px solid var(--foreground50);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius);
   background: var(--background);
   z-index: 4;
@@ -248,7 +252,7 @@ ul {
 
 #engine-menu li:hover,
 #engine-menu li:focus-visible {
-  background: var(--foreground75);
+  background: var(--surface);
   color: var(--foreground);
   outline: none;
 }
@@ -263,7 +267,7 @@ ul {
   inset-inline: 0;
   top: calc(var(--bar) + var(--sp-3));
   padding: var(--sp-1);
-  border: 1px solid var(--foreground50);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius);
   background: var(--background);
   z-index: 3;
@@ -305,7 +309,7 @@ ul {
 
 #suggestions-list a:hover,
 #suggestions-list a:focus-visible {
-  background: var(--foreground75);
+  background: var(--surface);
 }
 
 #suggestions-list a:hover span,
@@ -347,7 +351,7 @@ ul {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  border-top: 1px solid var(--foreground50);
+  border-top: 1px solid var(--hairline);
   padding-top: var(--sp-3);
 }
 
@@ -381,7 +385,7 @@ ul {
   justify-content: center;
   width: var(--tile);
   height: var(--tile);
-  border: 1px solid var(--foreground50);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius);
   font-size: var(--text-sm);
   color: var(--foreground50);
@@ -399,7 +403,7 @@ ul {
 .add-tile:hover,
 .add-tile:focus-visible {
   border-color: var(--foreground);
-  background: var(--foreground75);
+  background: var(--surface);
   color: var(--foreground);
 }
 
@@ -431,7 +435,7 @@ ul {
   gap: var(--sp-2);
   height: var(--bar);
   padding-inline: var(--sp-2);
-  border-bottom: 1px solid var(--foreground50);
+  border-bottom: 1px solid var(--hairline);
 }
 
 #favorites-section.adding #add-top-site-input-container {
@@ -483,7 +487,7 @@ ul {
   right: 0;
   width: min(var(--panel-width), 88vw);
   padding: var(--sp-6) var(--sp-4) var(--sp-4);
-  border-inline-start: 1px solid var(--foreground50);
+  border-inline-start: 1px solid var(--hairline);
   background: var(--background);
   overflow-y: auto;
   z-index: 9;
@@ -528,7 +532,7 @@ ul {
 }
 
 #settings-panel label:hover {
-  background: var(--foreground75);
+  background: var(--surface);
 }
 
 #settings-panel input:focus-visible + label {
@@ -589,7 +593,7 @@ ul {
   width: 1.5rem;
   height: 1px;
   margin-block: var(--sp-3);
-  background: var(--foreground50);
+  background: var(--hairline);
 }
 
 /* ------------------------------------------------------------------ toast */
@@ -600,7 +604,7 @@ ul {
   transform: translateX(-50%);
   max-width: min(92vw, var(--width));
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--foreground50);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius);
   background: var(--background);
   font-size: var(--text-sm);
