@@ -1,11 +1,11 @@
 {
-  "name": "Min Tab",
-  "version": "2.7",
+  "name": "Yawn",
+  "version": "1.0",
   "manifest_version": 3,
   "description": "A minimalist new tab page with multi-engine search, smart suggestions from history, keyboard navigation, and light/dark theme support.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "min-tab@extension.local",
+      "id": "yawn@extension.local",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": [
