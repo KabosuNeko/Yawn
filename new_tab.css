@@ -10,7 +10,6 @@
   --font-size-base: 0.95rem;
   --font-size-md: 1.15rem;
   --font-size-large: 1.5rem;
-  --font-size-small: 0.75rem;
 
   /* Layout dimensions */
   --width-search: 35rem;
@@ -28,9 +27,6 @@
 
   --space-gap: 0.5rem;
   --space-gap-md: 1rem;
-
-  /* Borders & lines */
-  --border-thin: 1px;
 
   /* Transitions */
   --transition: 0.3s ease-in-out;
@@ -211,7 +207,6 @@ button:focus-visible {
   max-width: var(--width-search);
   overflow-x: auto;
   scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-left: var(--space-4xs);
   margin-bottom: calc(-1 * var(--space-xxs));
   flex: 1;
@@ -277,10 +272,8 @@ button:focus-visible {
   justify-content: end;
 }
 
-#search-btn.hidden,
 #search-btn.disabled {
   display: none !important;
-  pointer-events: none;
 }
 
 #settings-btn svg * {
@@ -307,11 +300,6 @@ button:focus-visible {
 #settings-panel h2 {
   font-size: var(--font-size-md);
   font-weight: 900;
-}
-
-#settings-panel.hidden {
-  display: none;
-  pointer-events: none;
 }
 
 #settings-btn.hidden,
@@ -581,12 +569,10 @@ button:focus-visible {
   margin-right: 0;
 }
 #top-website-list-container + #add-top-site-input-container {
-  visibility: none;
   pointer-events: none;
 }
 #top-website-list-container.edit-mode + #add-top-site-input-container {
   transform: translateY(110%);
-  visibility: visible;
   pointer-events: unset;
 }
 
@@ -601,7 +587,7 @@ button:focus-visible {
   display: none;
 }
 
-/*  ----------------------------------- taost  */
+/*  ----------------------------------- toast  */
 #toast {
   left: 50%;
   transform: translateX(-50%);

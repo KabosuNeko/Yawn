@@ -22,6 +22,6 @@
     "topSites"
   ],
   "icons": {
-    "128": "./assets/images/icon128.png"
+    "128": "images/icon128.png"
   }
 }
