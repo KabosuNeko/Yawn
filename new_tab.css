@@ -29,7 +29,7 @@
 
   /* geometry */
   --width: 34rem;
-  --radius: 4px;
+  --radius: 0; /* square, to match a chrome that zeroes its own radii */
   --bar: 2.75rem;
   --tile: 2rem;
   --panel-width: 21rem;
@@ -142,7 +142,7 @@ ul {
   height: var(--bar);
   padding-inline: var(--sp-3);
   border: 1px solid var(--hairline);
-  border-radius: 6px;
+  border-radius: var(--radius);
   transition: border-color var(--fast) var(--ease);
 }
 
@@ -210,8 +210,8 @@ ul {
   padding-inline: var(--sp-3);
   margin-inline-end: calc(var(--sp-3) * -1);
   border-inline-start: 1px solid var(--hairline);
-  border-start-end-radius: 6px;
-  border-end-end-radius: 6px;
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
   font-size: var(--text-sm);
   color: var(--foreground50);
   transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
