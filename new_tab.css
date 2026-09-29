@@ -1,223 +1,258 @@
+/* ------------------------------------------------------------------ tokens */
 :root {
-  /* Colors */
+  /* The four palette variables are also written at runtime by theme.js
+     (dark default here, light / browser theme override them). */
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 80%);
-  --foreground50: hsl(0, 0%, 25%);
-  --foreground75: hsl(0, 0%, 5%);
+  --foreground50: hsl(0, 0%, 60%); /* muted text and hairlines */
+  --foreground75: hsl(0, 0%, 12%); /* hover surface */
 
-  /* Typography */
-  --font-family-base: "Courier New", Courier, monospace;
-  --font-size-base: 0.95rem;
-  --font-size-md: 1.15rem;
-  --font-size-large: 1.5rem;
+  /* type */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.15rem;
+  --leading: 1.5;
 
-  /* Layout dimensions */
-  --width-search: 35rem;
+  /* space */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
 
-  /* Spacing system */
-  --space-4xs: 0.15rem;
-  --space-xxxs: 0.25rem;
-  --space-xxs: 0.5rem;
-  --space-xs: 1rem;
-  --space-sm: 1.5rem;
-  --space-md: 2rem;
-  --space-lg: 2.5rem;
-  --space-xl: 3rem;
-  --space-2xl: 9rem;
+  /* geometry */
+  --width: 34rem;
+  --radius: 4px;
+  --icon: 1.5rem;
+  --row: 2.5rem;
 
-  --space-gap: 0.5rem;
-  --space-gap-md: 1rem;
-
-  /* Transitions */
-  --transition: 0.3s ease-in-out;
-  --transition-fast: 0.15s ease-in-out;
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --fast: 120ms;
+  --base: 240ms;
 }
 
-* {
+/* -------------------------------------------------------------------- base */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  color: var(--foreground);
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-base);
-  margin: 0;
-  padding: 0;
 }
 
 html,
 body {
   height: 100%;
   width: 100%;
-  background-color: var(--background);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  margin: 0;
 }
 
-/* --------------------------------------- General elements */
-.prevent-ui-interactivity {
-  pointer-events: none;
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  -webkit-font-smoothing: antialiased;
 }
-.hidden {
-  display: none !important;
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  margin: 0;
 }
+
 button {
-  background: transparent;
-  border: none;
   cursor: pointer;
 }
 
-button:focus-visible {
-  outline: 1px solid;
+:focus-visible {
+  outline: 1px solid var(--foreground);
+  outline-offset: 2px;
+  border-radius: var(--radius);
 }
 
+/* State hooks used by new_tab.js */
+.hidden {
+  display: none !important;
+}
+.prevent-ui-interactivity {
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------- icon buttons */
 .icon-btn {
-  border-radius: 100%;
-  width: var(--space-md);
-  height: var(--space-md);
-  max-width: var(--space-md);
-  max-height: var(--space-md);
-  opacity: 0.5;
-  aspect-ratio: 1;
-}
-
-.icon-btn:has(svg) {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  width: var(--icon);
+  height: var(--icon);
+  aspect-ratio: 1;
+  flex: none;
+  opacity: 0.5;
+  transition: opacity var(--fast) var(--ease);
 }
 
 .icon-btn:hover,
-.icon-btn:focus {
+.icon-btn:focus-visible,
+.icon-btn:focus-within {
   opacity: 1;
 }
 
 .icon-btn svg {
-  width: var(--space-sm);
-  height: var(--space-sm);
-  fill: transparent;
-  stroke: var(--foreground);
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
 }
 
-/* --------------------------------------- Search elements */
-#search-container #search-input-wrapper,
-#add-top-site-input-container {
-  display: flex;
-  position: relative;
-  justify-content: end;
-  align-items: center;
-  padding-bottom: var(--space-xxxs);
-  border-bottom: 1px solid var(--foreground50);
-}
-
-#search-input-wrapper.minimal {
-  border-bottom: none !important;
-}
-
+/* ------------------------------------------------------------- the column */
 #search-container {
-  max-width: var(--width-search);
-  width: 90%;
   position: relative;
+  width: min(92vw, var(--width));
 }
-#search-container > div:not(#top-website-list-container)::after,
-#search-input-wrapper.minimal::before {
+
+/* Input rows: search and "add favourite". Shared hairline + focus accent. */
+#search-input-wrapper,
+#add-top-site-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--row);
+  padding-inline: var(--sp-2);
+  border-bottom: 1px solid var(--foreground50);
+  transition: border-color var(--base) var(--ease);
+}
+
+/* the 1px accent that grows left to right while the row holds focus */
+#search-input-wrapper::after,
+#add-top-site-input-container::after {
   content: "";
   position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
   height: 1px;
   background: var(--foreground);
-  width: 0;
-  transition: width var(--transition);
-  bottom: 0px;
-  left: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--base) var(--ease);
 }
 
-#search-input-wrapper.minimal::before {
-  width: 1px;
-  height: calc(100% - var(--space-xxxs));
-  background: var(--foreground50);
-  transform: translateX(-1rem) scaleY(1);
-  transition: transform 0.2s;
-  top: 0;
-  transform-origin: bottom;
-}
-#search-input-wrapper.minimal:focus-within::before {
-  transform: translateX(-1rem) scaleY(0);
+#search-input-wrapper:focus-within,
+#add-top-site-input-container:focus-within {
+  border-bottom-color: transparent;
 }
 
-#search-input-wrapper.minimal::after {
-  transition-delay: 0.2s !important;
+#search-input-wrapper:focus-within::after,
+#add-top-site-input-container:focus-within::after {
+  transform: scaleX(1);
 }
 
-#search-container > div:not(#top-website-list-container):focus-within::after {
+#search-input-wrapper input,
+#add-top-site-input-container input {
   width: 100%;
-}
-
-#search-container > div:not(#top-website-list-container):focus-within {
-  border-bottom: 1px solid transparent;
-}
-
-#search-btn {
-  position: absolute;
-  right: var(--space-xxxs);
-  top: 45%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  opacity: 0;
-}
-
-#search-container > div:focus-within #search-btn {
-  opacity: 0.5;
-  pointer-events: unset;
-}
-
-#search-container > div:focus-within #search-btn:hover,
-#search-container > div:focus-within #search-btn:focus {
-  opacity: 1;
-}
-
-#search-container > div input {
-  background: transparent;
+  min-width: 0;
+  height: 100%;
+  padding-block: 0;
   outline: none;
-  border: none;
-  padding: var(--space-xxs);
-  padding-right: var(--space-xl);
-  width: 100%;
+  color: var(--foreground);
+  caret-color: var(--foreground);
 }
 
-#search-container > div input::placeholder {
+#search-input-wrapper input {
+  padding-inline-end: var(--sp-6);
+}
+
+#search-input-wrapper input::placeholder,
+#add-top-site-input-container input::placeholder {
   color: var(--foreground50);
 }
 
 #searchIcon {
   display: flex;
   align-items: center;
-}
-#searchIcon img {
-  width: var(--space-xs);
-  height: auto;
+  flex: none;
 }
 
-/* --------------------------------------- search engines elements */
+#searchIcon img {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+/* "hide search input" setting: hairline off, a caret tick marks the row */
+#search-input-wrapper.minimal {
+  border-bottom-color: transparent;
+}
+
+#search-input-wrapper.minimal input {
+  padding-inline-start: var(--sp-3);
+}
+
+#search-input-wrapper.minimal::before {
+  content: "";
+  position: absolute;
+  left: var(--sp-2);
+  bottom: 0;
+  width: 1px;
+  height: 1rem;
+  background: var(--foreground);
+  transform-origin: bottom;
+  transition: transform var(--base) var(--ease);
+}
+
+#search-input-wrapper.minimal:focus-within::before {
+  transform: scaleY(0);
+}
+
+#search-btn {
+  position: absolute;
+  right: var(--sp-1);
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease);
+}
+
+#search-input-wrapper:focus-within #search-btn {
+  opacity: 0.5;
+  pointer-events: auto;
+}
+
+#search-input-wrapper:focus-within #search-btn:hover,
+#search-input-wrapper:focus-within #search-btn:focus-visible {
+  opacity: 1;
+}
+
+#search-btn.disabled {
+  display: none !important;
+}
+
+/* ------------------------------------------------- engine list + favourites */
 #search-engines-list,
 #top-website-list {
   display: flex;
-  justify-content: start;
   align-items: center;
-  list-style: none;
-  gap: var(--space-xxxs);
-  padding: var(--space-xxs);
-  max-width: var(--width-search);
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-left: var(--space-4xs);
-  margin-bottom: calc(-1 * var(--space-xxs));
+  gap: var(--sp-1);
   flex: 1;
   min-width: 0;
-}
-#top-website-list {
-  gap: 0;
-}
-
-#top-website-list li {
-  flex-shrink: 0;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-1);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 #search-engines-list::-webkit-scrollbar,
@@ -225,129 +260,336 @@ button:focus-visible {
   display: none;
 }
 
-#search-engines-list li button,
-#top-website-list-container button,
-#top-website-list a {
-  text-decoration: none;
-  padding-inline: var(--space-xxs);
-  padding-block: var(--space-4xs);
-  border-radius: 50px;
-  font-size: var(--font-size-base);
-  color: var(--foreground50);
-}
-
-#search-engines-list li button.active {
-  color: var(--foreground);
+#search-engines-list li,
+#top-website-list li {
+  flex: none;
 }
 
 #search-engines-list li {
   color: var(--foreground50);
 }
 
-#search-engines-list li button:focus,
-#top-website-list-container button:focus span,
-#top-website-list a:focus {
+/* engine chips and favourite links share one text treatment */
+#search-engines-list li button,
+#top-website-list a,
+#top-website-list-container button {
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  color: var(--foreground50);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+
+#search-engines-list li button:hover,
+#search-engines-list li button:focus-visible,
+#top-website-list a:hover,
+#top-website-list a:focus-visible,
+#top-website-list-container button:hover,
+#top-website-list-container button:focus-visible {
+  color: var(--foreground);
+  background: var(--foreground75);
+}
+
+#search-engines-list li button.active {
   color: var(--foreground);
 }
 
+/* the "/" between engines and between favourites */
 #search-engines-list li.inactive {
+  color: var(--foreground50);
   pointer-events: none;
 }
 
-/* --------------------------------------- Settings elements */
-#settings-btn {
-  transition: all var(--transition);
+#top-website-list {
+  gap: 0;
 }
 
+#top-website-list li.link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding-inline: var(--sp-1);
+}
+
+#top-website-list .actions-btns {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease);
+}
+
+#top-website-list .actions-btns button,
+#top-website-list .actions-btns button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+#top-website-list-container.edit-mode .actions-btns,
+#top-website-list li.link:focus-within .actions-btns {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#top-website-list-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  background: var(--background);
+  border-top: 1px solid var(--foreground50);
+  z-index: 1;
+}
+
+#top-website-list-container.no-separator {
+  border-top-color: transparent;
+}
+
+#manage-top-websites-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: none;
+  opacity: 0.35;
+  transition: opacity var(--fast) var(--ease);
+}
+
+#manage-top-websites-btn:hover,
+#manage-top-websites-btn:focus-visible,
+#top-website-list-container:hover #manage-top-websites-btn,
+#top-website-list-container:focus-within #manage-top-websites-btn {
+  opacity: 1;
+}
+
+#manage-top-websites-btn span {
+  font-size: var(--text-sm);
+}
+
+#manage-top-websites-btn .icon-btn {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* hidden until edit-mode; pointer-events off so it never eats a click */
+#add-top-site-input-container {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+  transition: transform var(--base) var(--ease), opacity var(--fast) linear;
+}
+
+#top-website-list-container.edit-mode + #add-top-site-input-container {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(115%);
+}
+
+/* ------------------------------------------------------------ suggestions */
+#suggestions-list {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--row);
+  margin: 0;
+  padding: var(--sp-2) 0 0;
+  list-style: none;
+  background: var(--background);
+  z-index: 2;
+}
+
+/* while suggestions are open they take the engine row's place */
+#search-container:has(#suggestions-list:not(:empty)) #search-engines-list {
+  visibility: hidden;
+}
+
+#suggestions-list li {
+  text-align: start;
+}
+
+#suggestions-list li + li {
+  border-top: 1px solid var(--foreground75);
+}
+
+#suggestions-list a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease);
+}
+
+#suggestions-list a img {
+  flex: none;
+}
+
+#suggestions-list a span {
+  color: var(--foreground50);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#suggestions-list a span:last-of-type {
+  margin-inline-start: auto;
+  opacity: 0;
+  transform: translateX(-0.5rem);
+  color: var(--foreground);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+#suggestions-list a:hover,
+#suggestions-list a:focus-visible {
+  background: var(--foreground75);
+}
+
+#suggestions-list a:hover span,
+#suggestions-list a:focus-visible span {
+  color: var(--foreground);
+}
+
+#suggestions-list a:hover span:last-of-type,
+#suggestions-list a:focus-visible span:last-of-type {
+  opacity: 1;
+  transform: none;
+}
+
+#suggestions-list a svg {
+  display: none;
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  animation: spin 1s linear infinite;
+}
+
+#suggestions-list a.loading svg {
+  display: block;
+}
+
+#suggestions-list a.loading span:last-of-type {
+  display: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------- settings */
 #settings-trigger {
   position: fixed;
-  padding-bottom: var(--space-md);
-  padding-right: var(--space-md);
-  width: var(--space-2xl);
-  height: var(--space-2xl);
-  bottom: 0;
   right: 0;
+  bottom: 0;
+  width: 9rem;
+  height: 9rem;
   display: flex;
   align-items: end;
   justify-content: end;
+  padding: var(--sp-4);
 }
 
-#search-btn.disabled {
-  display: none !important;
+#settings-btn {
+  opacity: 0;
+  transform: translateY(50%);
+  transition: opacity var(--base) var(--ease), transform var(--base) var(--ease);
 }
 
-#settings-btn svg * {
-  stroke: var(--foreground);
-  fill: transparent;
-}
-
-#settings-btn svg {
-  width: calc(var(--space-sm) - 0.16rem);
-  height: calc(var(--space-sm) - 0.16rem);
+#settings-trigger:hover #settings-btn,
+#settings-trigger:focus-within #settings-btn {
+  opacity: 1;
+  transform: none;
 }
 
 #settings-panel {
-  border-radius: var(--space-xxs);
-  border: solid 1px var(--foreground50);
   position: fixed;
-  bottom: var(--space-sm);
-  right: var(--space-sm);
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  max-height: calc(100vh - var(--sp-6));
+  overflow-y: auto;
+  padding: var(--sp-4);
+  border: 1px solid var(--foreground50);
+  border-radius: var(--radius);
   background: var(--background);
-  padding: var(--space-xs);
   z-index: 9;
 }
 
 #settings-panel h2 {
-  font-size: var(--font-size-md);
-  font-weight: 900;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-#settings-btn.hidden,
-#settings-btn.disabled {
-  pointer-events: none;
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-#settings-trigger:hover #settings-btn {
-  transform: translateY(0);
-  opacity: 1 !important;
-  pointer-events: all !important;
-  display: flex !important;
-}
-
-#settings-panel li {
+#settings-panel ul {
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
+#settings-panel li {
+  position: relative;
+}
+
+/* real checkbox, visually hidden but still focusable */
 #settings-panel input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #settings-panel label {
   display: flex;
   align-items: center;
-  justify-content: start;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
   cursor: pointer;
   user-select: none;
-  padding-block: var(--space-xxxs);
-  gap: var(--space-xxxs);
+  transition: background-color var(--fast) var(--ease);
+}
+
+#settings-panel label:hover {
+  background: var(--foreground75);
+}
+
+#settings-panel input:focus-visible + label {
+  outline: 1px solid var(--foreground);
+  outline-offset: 1px;
 }
 
 #settings-panel label span {
-  font-size: var(--font-size-base);
   width: 100%;
 }
 
 #settings-panel .check {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
+  width: 1rem;
+  height: 1rem;
 }
 
 #settings-panel .check svg {
+  width: 1rem;
+  height: 1rem;
   stroke: var(--foreground);
   stroke-width: 1.5;
+  fill: none;
 }
 
 #settings-panel .check svg polyline,
@@ -357,7 +599,7 @@ button:focus-visible {
 
 #settings-panel .check svg path {
   stroke-dasharray: 60;
-  transition: stroke-dashoffset 0.3s linear;
+  transition: stroke-dashoffset var(--base) linear;
   transition-delay: 0.2s;
 }
 
@@ -377,226 +619,69 @@ button:focus-visible {
   transition-delay: 0.2s;
 }
 
-#settingsSeparator {
-  width: var(--space-lg);
-  background: var(--foreground50);
-  height: 1px;
-  border-radius: 50px;
-  display: inline-block;
-  margin-block: var(--space-xxs);
-}
-
-#settingsSeparator.title {
-  margin-bottom: var(--space-xs);
-  margin-top: var(--space-xxs);
-}
-
-/* --------------------------------------- suggestions elements */
-#suggestions-list {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: var(--background);
-  list-style: none;
-  height: max-content;
-  display: inline-block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: translateY(var(--space-lg));
-  z-index: 9;
-}
-
-#suggestions-list:has(".search-result-item") {
-  padding-top: var(--space-lg);
-}
-
-#suggestions-list li {
-  text-align: start;
-}
-
-#suggestions-list a {
-  padding: var(--space-gap-md);
-  text-decoration: none;
-  width: 100%;
-  display: flex;
-  overflow: hidden;
-  gap: var(--space-gap);
-  justify-content: start;
-  align-items: center;
-  padding-left: var(--space-gap);
-  transition: all var(--transition-fast);
-  font-size: var(--font-size-base);
-}
-
-#suggestions-list a span {
-  color: var(--foreground50);
-}
-
-#suggestions-list a span:last-of-type {
-  opacity: 0;
-  transform: translateX(-200%);
-  transition: all var(--transition-fast);
-  font-size: var(--font-size-large);
-  margin-left: auto;
-  line-height: 0.5;
-  margin-top: -3px;
-}
-
-#suggestions-list a:hover,
-#suggestions-list a:focus {
-  outline: 0;
-  background: var(--foreground75);
-}
-
-#suggestions-list a:hover span,
-#suggestions-list a:focus span {
-  color: var(--foreground);
-}
-
-#suggestions-list a:hover span:last-of-type,
-#suggestions-list a:focus span:last-of-type {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-#suggestions-list a svg {
-  display: none;
-  margin-left: auto;
-  animation: spin 1s infinite linear;
-  width: var(--space-xs);
-  height: var(--space-xs);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-#suggestions-list a.loading svg {
+.separator {
   display: block;
-}
-
-#suggestions-list a.loading span:last-of-type {
-  display: none;
-}
-
-/* Top sites*/
-#top-website-list-container {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-xs);
-  position: relative;
-  margin-top: var(--space-xxs);
-  background: var(--background);
-  z-index: 1;
-}
-#top-website-list-container::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: var(--space-xs);
+  width: 1.5rem;
   height: 1px;
+  margin-block: var(--sp-3);
   background: var(--foreground50);
 }
-#top-website-list-container #manage-top-websites-btn {
-  display: flex;
-  gap: var(--space-4xs);
-  align-items: center;
-  color: var(--foreground);
-  opacity: 0;
-  margin-top: var(--space-xxs);
-}
-#top-website-list-container #manage-top-websites-btn:focus,
-#top-website-list-container:hover #manage-top-websites-btn {
-  opacity: 1;
-}
-#top-website-list-container #manage-top-websites-btn .icon-btn {
-  width: var(--space-xs);
-  height: var(--space-xs);
-}
-#top-website-list-container #manage-top-websites-btn span,
-#top-website-list span {
-  color: var(--foreground50);
-}
-#top-website-list-container #manage-top-websites-btn:hover span,
-#top-website-list-container #manage-top-websites-btn:focus span {
-  color: var(--foreground);
-}
-#top-website-list-container #manage-top-websites-btn:focus .icon-btn,
-#top-website-list-container #manage-top-websites-btn:hover .icon-btn {
-  opacity: 1;
-}
-#top-website-list a:focus {
-  outline: 1px white solid;
-}
-#top-website-list a:hover span,
-#top-website-list a:focus span {
-  color: var(--foreground);
-}
-#top-website-list li.link {
-  display: flex;
-  gap: var(--space-xxs);
-  align-items: center;
-  overflow: hidden;
-  transition: width 0.3s;
-  padding: var(--space-xxxs);
-}
-#top-website-list li.link span {
-  white-space: nowrap;
-}
-#top-website-list .actions-btns {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-xxxs);
-  transition: margin 0.3s;
-  margin-right: -2.75rem;
-}
-#top-website-list .actions-btns button,
-#top-website-list .actions-btns button svg {
-  padding: 0;
-  margin: 0;
-  width: var(--space-xs);
-  height: var(--space-xs);
-}
-#top-website-list-container.edit-mode #top-website-list .actions-btns {
-  margin-right: 0;
-}
-#top-website-list-container + #add-top-site-input-container {
-  pointer-events: none;
-}
-#top-website-list-container.edit-mode + #add-top-site-input-container {
-  transform: translateY(110%);
-  pointer-events: unset;
-}
 
-#add-top-site-input-container {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  transition: transform 0.3s;
-}
-#top-website-list-container.no-separator::before {
-  display: none;
-}
-
-/*  ----------------------------------- toast  */
+/* ------------------------------------------------------------------ toast */
 #toast {
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: var(--space-xxs);
-  border: solid 1px var(--foreground50);
   position: fixed;
-  bottom: var(--space-sm);
+  left: 50%;
+  bottom: var(--sp-5);
+  transform: translateX(-50%);
+  max-width: min(92vw, var(--width));
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--foreground50);
+  border-radius: var(--radius);
   background: var(--background);
-  padding: var(--space-xs);
+  font-size: var(--text-sm);
   z-index: 9;
-  max-width: var(--width-search);
+}
+
+/* ------------------------------------------------------------- narrow view */
+@media (max-width: 32rem) {
+  /* the engine row right below already shows which engine is active */
+  #searchIcon {
+    display: none;
+  }
+
+  #search-input-wrapper input,
+  #add-top-site-input-container input {
+    font-size: var(--text-sm);
+  }
+
+  #search-engines-list,
+  #top-website-list {
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  }
+
+  #settings-panel {
+    right: var(--sp-3);
+    left: var(--sp-3);
+    bottom: var(--sp-3);
+  }
+
+  #settings-trigger {
+    width: 6rem;
+    height: 6rem;
+    padding: var(--sp-3);
+  }
+
+  #suggestions-list a {
+    padding-inline: var(--sp-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

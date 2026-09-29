@@ -79,15 +79,15 @@ const renderIcons = () =>
 const LIGHT_COLORS = {
   "--background": "#ffffff",
   "--foreground": "hsl(0, 0%, 10%)",
-  "--foreground50": "hsl(0, 0%, 50%)",
-  "--foreground75": "hsl(0, 0%, 85%)",
+  "--foreground50": "hsl(0, 0%, 42%)",
+  "--foreground75": "hsl(0, 0%, 92%)",
 };
 
 const DARK_COLORS = {
   "--background": "#000000",
   "--foreground": "hsl(0, 0%, 80%)",
-  "--foreground50": "hsl(0, 0%, 25%)",
-  "--foreground75": "hsl(0, 0%, 5%)",
+  "--foreground50": "hsl(0, 0%, 60%)",
+  "--foreground75": "hsl(0, 0%, 12%)",
 };
 
 const applyTheme = async () => {
@@ -188,6 +188,7 @@ const renderEngines = () => {
 
     if (engine.preferred) {
       button.classList.add("active");
+      button.ariaCurrent = "true";
       $("#searchIcon").replaceChildren(el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` }));
     }
 
