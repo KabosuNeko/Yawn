@@ -1,0 +1,124 @@
+{
+  "searchEngines": [
+    {
+      "key": "startpage",
+      "label": "Startpage",
+      "active": true,
+      "preferred": true,
+      "url": "https://www.startpage.com/sp/search?q="
+    },
+    {
+      "key": "google",
+      "label": "Google",
+      "active": true,
+      "preferred": false,
+      "url": "https://www.google.com/search?q="
+    },
+    {
+      "key": "duckduckgo",
+      "label": "DuckDuckGo",
+      "active": true,
+      "preferred": false,
+      "url": "https://duckduckgo.com/?q="
+    },
+    {
+      "key": "brave",
+      "label": "Brave",
+      "active": true,
+      "preferred": false,
+      "url": "https://search.brave.com/search?q="
+    },
+    {
+      "key": "bing",
+      "label": "Bing",
+      "active": false,
+      "preferred": false,
+      "url": "https://www.bing.com/search?q="
+    },
+    {
+      "key": "perplexity",
+      "label": "Perplexity",
+      "active": true,
+      "preferred": false,
+      "url": "https://www.perplexity.ai/search?q="
+    },
+    {
+      "key": "mistral",
+      "label": "Mistral",
+      "active": false,
+      "preferred": false,
+      "url": "https://chat.mistral.ai/chat?q="
+    },
+    {
+      "key": "gemini",
+      "label": "Gemini",
+      "active": false,
+      "preferred": false,
+      "url": "https://www.google.com/search?udm=50&q="
+    },
+    {
+      "key": "chatgpt",
+      "label": "ChatGPT",
+      "active": false,
+      "preferred": false,
+      "url": "https://chat.openai.com/?q="
+    }
+  ],
+  "settingsOptions": [
+    {
+      "label": "Focus search bar on new tab",
+      "active": true,
+      "key": "focusOnLoad"
+    },
+    {
+      "label": "Hide search placeholder",
+      "active": false,
+      "key": "showPlaceholder"
+    },
+    {
+      "label": "Hide settings button",
+      "active": false,
+      "key": "hideSettingsButton"
+    },
+    {
+      "label": "Hide search engines list",
+      "active": false,
+      "key": "hideEngines"
+    },
+    {
+      "label": "Hide favourite websites list",
+      "active": true,
+      "key": "hideTopSites"
+    },
+    {
+      "label": "Hide fav sites list's separator",
+      "active": false,
+      "key": "hideTopSitesSepar"
+    },
+    {
+      "label": "Hide search button",
+      "active": false,
+      "key": "hideSearchButton"
+    },
+    {
+      "label": "Hide search engine logo",
+      "active": false,
+      "key": "hideSearchLogo"
+    },
+    {
+      "label": "Hide search input",
+      "active": false,
+      "key": "hideSearchInput"
+    },
+    {
+      "label": "switch to light mode",
+      "active": false,
+      "key": "lightmode"
+    },
+    {
+      "label": "Use browser theme",
+      "active": false,
+      "key": "useBrowserTheme"
+    }
+  ]
+}
