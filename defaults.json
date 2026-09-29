@@ -119,6 +119,11 @@
       "label": "Use browser theme",
       "active": false,
       "key": "useBrowserTheme"
+    },
+    {
+      "label": "Show clock",
+      "active": true,
+      "key": "showClock"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "Min Tab",
-  "version": "2.6",
+  "version": "2.7",
   "manifest_version": 3,
   "description": "A minimalist new tab page with multi-engine search, smart suggestions from history, keyboard navigation, and light/dark theme support.",
   "browser_specific_settings": {
@@ -18,8 +18,10 @@
     "newtab": "new_tab.html"
   },
   "permissions": [
-    "history",
     "topSites"
+  ],
+  "optional_permissions": [
+    "history"
   ],
   "icons": {
     "128": "images/icon128.png"

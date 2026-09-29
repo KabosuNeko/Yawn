@@ -535,7 +535,7 @@ ul {
 }
 
 /* real checkbox, visually hidden but still focusable */
-#settings-panel input {
+#settings-panel input[type="checkbox"] {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -633,6 +633,97 @@ ul {
   background: var(--background);
   font-size: var(--text-sm);
   z-index: 10;
+}
+
+/* ------------------------------------------------------------------- clock */
+#clock {
+  align-self: center;
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--foreground50);
+}
+
+/* ----------------------------------------------------- drawer: add engine */
+#engine-add {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--hairline);
+}
+
+#engine-add input {
+  min-width: 0;
+  height: var(--bar);
+  outline: none;
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+
+#engine-add input:first-child {
+  flex: 0 1 42%;
+}
+
+#engine-add input:nth-child(2) {
+  flex: 1 1 58%;
+}
+
+#engine-add input::placeholder {
+  color: var(--foreground50);
+}
+
+#engine-add .icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+}
+
+#reset-btn {
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  color: var(--foreground50);
+  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+
+#reset-btn:hover,
+#reset-btn:focus-visible {
+  color: var(--foreground);
+  background: var(--surface);
+}
+
+/* custom engines get a remove control; it keeps out of the way until needed */
+#settings-panel .row-remove {
+  position: absolute;
+  top: 50%;
+  right: var(--sp-1);
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0;
+}
+
+#settings-panel li:hover .row-remove,
+#settings-panel li:focus-within .row-remove {
+  opacity: 0.5;
+}
+
+#settings-panel .row-remove:hover,
+#settings-panel .row-remove:focus-visible {
+  opacity: 1;
+}
+
+#settings-panel li:has(.row-remove) label {
+  padding-inline-end: var(--sp-5);
+}
+
+/* dragging a favourite tile onto another one reorders them */
+.tile.dragging {
+  opacity: 0.4;
+}
+
+.tile.drop-target .tile-link {
+  border-color: var(--foreground);
+  background: var(--surface);
 }
 
 /* ------------------------------------------------------------- narrow view */

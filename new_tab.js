@@ -28,16 +28,39 @@ const suggestionsList = $("#suggestions-list");
 const settingsPanel = $("#settings-panel");
 const settingsBtn = $("#settings-btn");
 const toast = $("#toast");
+const clock = $("#clock");
 const favoritesSection = $("#favorites-section");
 const favoritesList = $("#favorites");
 const topSiteInput = $("#add-top-site-input");
 const addTopSiteBtn = $("#new-top-site-btn");
+const engineLabelInput = $("#engine-label-input");
+const engineUrlInput = $("#engine-url-input");
+const engineAddButton = $("#engine-add-btn");
+const resetButton = $("#reset-btn");
 
 /* ------------------------------------------------------------------- state */
 
 const engines = store.get("searchEngines", defaults.searchEngines);
 const settings = store.get("settingsOptions", defaults.settingsOptions);
 const userTheme = { light: false, browser: false };
+
+/* ------------------------------------------------------------------- clock */
+
+const paintClock = () => {
+  const now = new Date();
+  const text = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  if (clock.textContent !== text) {
+    clock.textContent = text;
+    clock.dateTime = now.toISOString();
+  }
+};
+
+const startClock = () => {
+  paintClock();
+  setInterval(() => {
+    if (!clock.classList.contains("hidden")) paintClock();
+  }, 1000);
+};
 
 /* ------------------------------------------------------------------- toast */
 
@@ -121,7 +144,52 @@ const applyTheme = async () => {
   }
 };
 
-/* ---------------------------------------------------------------- settings */
+/* --------------------------------------------------------------- settings */
+
+const HISTORY_PERMISSION = "history";
+const HISTORY_OPTION = { key: "historyPermission", label: "Suggestions from browsing history" };
+
+let resetArmed = false;
+
+const syncHistoryOption = async () => {
+  const input = document.getElementById(HISTORY_OPTION.key);
+  if (input) input.checked = await hasHistoryPermission();
+};
+
+const toggleHistoryPermission = async (input, wanted) => {
+  try {
+    const changed = wanted
+      ? await api.permissions.request({ permissions: [HISTORY_PERMISSION] })
+      : await api.permissions.remove({ permissions: [HISTORY_PERMISSION] });
+    input.checked = wanted && changed;
+    showToast(
+      wanted
+        ? changed
+          ? "Suggestions will use your browsing history"
+          : "Permission denied"
+        : "Suggestions will use top sites only",
+    );
+  } catch {
+    input.checked = false;
+    showToast("Could not change the history permission");
+  }
+  if (input.checked) renderSuggestions(searchInput.value.trim());
+};
+
+const resetEverything = () => {
+  if (!resetArmed) {
+    resetArmed = true;
+    showToast('Press "Reset to defaults" again to confirm', false);
+    setTimeout(() => {
+      resetArmed = false;
+    }, 5000);
+    return;
+  }
+  localStorage.removeItem("settingsOptions");
+  localStorage.removeItem("searchEngines");
+  localStorage.removeItem(FAVORITES_KEY);
+  location.reload();
+};
 
 const THEME_FLAGS = { lightmode: "light", useBrowserTheme: "browser" };
 const OTHER_THEME_SETTING = { lightmode: "useBrowserTheme", useBrowserTheme: "lightmode" };
@@ -157,6 +225,9 @@ const applySetting = (key, isActive) => {
       break;
     case "hideSearchInput":
       toggle("#bar", "minimal");
+      break;
+    case "showClock":
+      clock.classList.toggle("hidden", !isActive);
       break;
     case "lightmode":
     case "useBrowserTheme":
@@ -205,6 +276,44 @@ const ENGINE_BANGS = {
 
 const bangOf = (engine) => engine.bang ?? ENGINE_BANGS[engine.key] ?? engine.key.slice(0, 2);
 
+/* custom engines live in the same array as the shipped ones, marked so the
+   settings list can offer to remove them */
+const engineSlug = (label) => {
+  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "engine";
+  let key = base;
+  for (let n = 2; engines.some((engine) => engine.key === key); n += 1) key = `${base}-${n}`;
+  return key;
+};
+
+const addCustomEngine = () => {
+  const label = engineLabelInput.value.trim();
+  const url = engineUrlInput.value.trim();
+
+  if (!label || !url) return showToast("Enter a name and a search url");
+  if (!toUrl(url)) return showToast("Search url must be an https address");
+
+  engines.push({ key: engineSlug(label), label, url, active: true, preferred: false, custom: true });
+  store.set("searchEngines", engines);
+  engineLabelInput.value = "";
+  engineUrlInput.value = "";
+  renderEngines();
+  renderSettings();
+  showToast(`Search engine "${label}" added`);
+};
+
+const removeCustomEngine = (key) => {
+  const engine = engines.find((candidate) => candidate.key === key && candidate.custom);
+  if (!engine) return;
+  if (engines.length === 1) return showToast("Keep at least one search engine");
+
+  engines.splice(engines.indexOf(engine), 1);
+  if (!engines.some((candidate) => candidate.preferred)) engines[0].preferred = true;
+  store.set("searchEngines", engines);
+  renderEngines();
+  renderSettings();
+  showToast(`Search engine "${engine.label}" removed`);
+};
+
 const closeEngineMenu = () => {
   engineMenu.hidden = true;
   engineBtn.setAttribute("aria-expanded", "false");
@@ -246,7 +355,7 @@ const renderEngines = () => {
   );
 };
 
-const createOption = (option, container) => {
+const createOption = (option, container, onRemove = null) => {
   const label = el("label", { htmlFor: option.key });
   const check = el("div", { className: "check" });
   check.append(svgIcon(icons.check.content, true));
@@ -254,6 +363,15 @@ const createOption = (option, container) => {
 
   const li = document.createElement("li");
   li.append(el("input", { type: "checkbox", id: option.key, checked: option.active }), label);
+
+  if (onRemove) {
+    const remove = el("button", { className: "icon-btn row-remove", title: `Remove ${option.label}` });
+    remove.dataset.icon = "trash";
+    remove.setAttribute("aria-label", `Remove ${option.label}`);
+    remove.addEventListener("click", () => onRemove(option.key));
+    li.append(remove);
+  }
+
   container.append(li);
 };
 
@@ -263,7 +381,10 @@ const renderSettings = () => {
   settingsContainer.replaceChildren();
   enginesContainer.replaceChildren();
   settings.forEach((option) => createOption(option, settingsContainer));
-  engines.forEach((option) => createOption(option, enginesContainer));
+  createOption({ ...HISTORY_OPTION, active: false }, settingsContainer);
+  engines.forEach((option) => createOption(option, enginesContainer, option.custom ? removeCustomEngine : null));
+  syncHistoryOption();
+  renderIcons();
 };
 
 const closeSettingsPanel = () => {
@@ -340,11 +461,22 @@ const handleEngineSettingChange = (key, isActive) => {
 
 /* ------------------------------------------------------------- suggestions */
 
+/* history is an optional permission, granted from the settings drawer, so every
+   reader of it has to cope with it being absent */
+const hasHistoryPermission = async () => {
+  if (!api.history || !api.permissions) return false;
+  try {
+    return await api.permissions.contains({ permissions: [HISTORY_PERMISSION] });
+  } catch {
+    return false;
+  }
+};
+
 const getSuggestions = async (query) => {
-  if (!api.topSites || !api.history) return [];
+  if (!api.topSites) return [];
   const [topSites, historyItems] = await Promise.all([
     api.topSites.get(),
-    api.history.search({ text: query, maxResults: 100 }),
+    (await hasHistoryPermission()) ? api.history.search({ text: query, maxResults: 100 }) : [],
   ]);
 
   const needle = query.toLowerCase();
@@ -445,6 +577,7 @@ const renderFavorites = () => {
       href: site.url,
       title: site.title,
       textContent: monogram(site.url),
+      draggable: false,
     });
     link.setAttribute("aria-label", site.title);
 
@@ -454,7 +587,8 @@ const renderFavorites = () => {
       favActionButton(site.id, "delete", "trash", `delete ${site.title}`),
     );
 
-    const tile = el("li", { className: "tile" });
+    const tile = el("li", { className: "tile", draggable: true });
+    tile.dataset.id = site.id;
     tile.append(link, actions);
     return tile;
   });
@@ -563,6 +697,68 @@ const cancelDelete = () => {
   pendingDeleteId = null;
 };
 
+/* ------------------------------------------------ reordering favourites */
+
+let draggedId = null;
+
+const persistFavoriteOrder = (id) => {
+  store.set(FAVORITES_KEY, favorites);
+  renderFavorites();
+  favoritesList.querySelector(`[data-id="${id}"] .tile-link`)?.focus();
+};
+
+const moveFavorite = (id, targetId) => {
+  const from = favorites.findIndex((site) => site.id === id);
+  const to = favorites.findIndex((site) => site.id === targetId);
+  if (from < 0 || to < 0 || from === to) return;
+  favorites.splice(to, 0, ...favorites.splice(from, 1));
+  persistFavoriteOrder(id);
+};
+
+const moveFavoriteBy = (id, step) => {
+  const from = favorites.findIndex((site) => site.id === id);
+  const to = from + step;
+  if (from < 0 || to < 0 || to >= favorites.length) return;
+  favorites.splice(to, 0, ...favorites.splice(from, 1));
+  persistFavoriteOrder(id);
+};
+
+const initFavoriteOrdering = () => {
+  favoritesList.addEventListener("dragstart", (event) => {
+    const tile = event.target.closest(".tile[data-id]");
+    if (!tile) return;
+    draggedId = tile.dataset.id;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggedId); // firefox needs data to start a drag
+    tile.classList.add("dragging");
+  });
+
+  favoritesList.addEventListener("dragend", () => {
+    draggedId = null;
+    favoritesList
+      .querySelectorAll(".dragging, .drop-target")
+      .forEach((tile) => tile.classList.remove("dragging", "drop-target"));
+  });
+
+  favoritesList.addEventListener("dragover", (event) => {
+    const tile = event.target.closest(".tile[data-id]");
+    if (!tile || !draggedId || tile.dataset.id === draggedId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    favoritesList.querySelectorAll(".drop-target").forEach((other) => other.classList.remove("drop-target"));
+    tile.classList.add("drop-target");
+  });
+
+  favoritesList.addEventListener("drop", (event) => {
+    const tile = event.target.closest(".tile[data-id]");
+    if (!tile || !draggedId) return;
+    event.preventDefault();
+    const id = draggedId;
+    draggedId = null;
+    moveFavorite(id, tile.dataset.id);
+  });
+};
+
 const initFavorites = async () => {
   if (!favorites.length) {
     const browserSites = await api.topSites.get().catch(() => []);
@@ -588,6 +784,8 @@ const initFavorites = async () => {
     if (event.key === "Enter") submitFavorite();
   });
   addTopSiteBtn.addEventListener("click", submitFavorite);
+
+  initFavoriteOrdering();
 };
 
 /* -------------------------------------------------------------------- init */
@@ -615,15 +813,31 @@ const initGlobalListeners = () => {
       return;
     }
 
-    if (event.key === "/" && !["search-input", "add-top-site-input"].includes(document.activeElement.id)) {
+    // any text field owns the keyboard: no shortcuts, no suggestion walk
+    const typing = document.activeElement?.matches?.(
+      'input:not([type="checkbox"]), textarea, [contenteditable]',
+    );
+    const typingOutsideSearch = typing && document.activeElement !== searchInput;
+
+    if (event.key === "/" && !typing) {
       event.preventDefault();
       searchInput.focus();
       return;
     }
 
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      if (!inEngineMenu) navigateSuggestions(event.key);
+      if (!inEngineMenu && !typingOutsideSearch) navigateSuggestions(event.key);
       return;
+    }
+
+    // ctrl + arrows reorder the focused favourite, the keyboard twin of dragging
+    if (event.ctrlKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      const tile = document.activeElement?.closest?.(".tile[data-id]");
+      if (tile) {
+        event.preventDefault();
+        moveFavoriteBy(tile.dataset.id, event.key === "ArrowRight" ? 1 : -1);
+        return;
+      }
     }
 
     if (event.key === "Enter") {
@@ -671,14 +885,24 @@ const initGlobalListeners = () => {
     if (!event.target.closest("a, button, input, textarea, #settings-panel")) searchInput.focus();
   });
 
-  [
-    ["#settings-options", handleSettingChange],
-    ["#settings-search-engines", handleEngineSettingChange],
-  ].forEach(([selector, handler]) =>
-    $(selector).addEventListener("change", (event) => {
-      if (event.target.tagName === "INPUT") handler(event.target.id, event.target.checked);
+  $("#settings-options").addEventListener("change", (event) => {
+    if (event.target.tagName !== "INPUT") return;
+    if (event.target.id === HISTORY_OPTION.key) return void toggleHistoryPermission(event.target, event.target.checked);
+    handleSettingChange(event.target.id, event.target.checked);
+  });
+
+  $("#settings-search-engines").addEventListener("change", (event) => {
+    if (event.target.tagName === "INPUT") handleEngineSettingChange(event.target.id, event.target.checked);
+  });
+
+  engineAddButton.addEventListener("click", addCustomEngine);
+  [engineLabelInput, engineUrlInput].forEach((input) =>
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") addCustomEngine();
     }),
   );
+
+  resetButton.addEventListener("click", resetEverything);
 
   suggestionsList.addEventListener("click", (event) => {
     event.target.closest(".suggestion-link")?.classList.add("loading");
@@ -703,6 +927,7 @@ const init = async () => {
   }
 
   applyAllSettings();
+  startClock();
   initGlobalListeners();
   initSuggestions();
   await initFavorites();

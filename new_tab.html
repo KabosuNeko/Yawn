@@ -9,6 +9,7 @@
 
   <body>
     <main id="app">
+      <time id="clock" class="hidden"></time>
       <!-- command bar: engine logo, input, search, engine picker -->
       <div id="bar">
         <i id="searchIcon" aria-hidden="true"></i>
@@ -74,6 +75,32 @@
         <ul id="settings-options"></ul>
         <div class="separator"></div>
         <ul id="settings-search-engines"></ul>
+
+        <div id="engine-add">
+          <input
+            type="text"
+            id="engine-label-input"
+            placeholder="Name"
+            title="Name shown in the engine menu"
+            aria-label="Search engine name"
+          />
+          <input
+            type="text"
+            id="engine-url-input"
+            placeholder="Search url"
+            title="The query is appended to this url, or use %s as its placeholder"
+            aria-label="Search url, %s is replaced by the query"
+          />
+          <button
+            id="engine-add-btn"
+            class="icon-btn"
+            data-icon="plus"
+            aria-label="Add search engine"
+          ></button>
+        </div>
+
+        <div class="separator"></div>
+        <button id="reset-btn" type="button">Reset to defaults</button>
       </aside>
 
       <div id="toast" class="hidden" role="status" aria-live="polite"></div>
