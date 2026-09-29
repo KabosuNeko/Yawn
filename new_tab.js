@@ -1,3 +1,5 @@
+import { ENGINE_BANGS, engineSlug, monogram, searchTarget, siteKey, toUrl, uniqueBang } from "./lib.js";
+
 const api = globalThis.browser ?? globalThis.chrome;
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
@@ -51,12 +53,20 @@ const userTheme = { light: false, browser: false };
 
 /* ------------------------------------------------------------------- clock */
 
+const clockIs12h = () => settings.some((option) => option.key === "clock12" && option.active);
+
 const paintClock = () => {
   const now = new Date();
-  const text = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const text = now.toLocaleTimeString(
+    [],
+    clockIs12h()
+      ? { hour: "numeric", minute: "2-digit", hour12: true }
+      : { hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
+  );
   if (clock.textContent !== text) {
     clock.textContent = text;
     clock.dateTime = now.toISOString();
+    clock.title = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   }
 };
 
@@ -152,7 +162,11 @@ const applyTheme = async () => {
 /* --------------------------------------------------------------- settings */
 
 const HISTORY_PERMISSION = "history";
-const HISTORY_OPTION = { key: "historyPermission", label: "Suggestions from browsing history" };
+const HISTORY_OPTION = {
+  key: "historyPermission",
+  label: "Suggestions from browsing history",
+  group: "History",
+};
 
 let resetArmed = false;
 
@@ -234,6 +248,9 @@ const applySetting = (key, isActive) => {
     case "showClock":
       clock.classList.toggle("hidden", !isActive);
       break;
+    case "clock12":
+      paintClock();
+      break;
     case "lightmode":
     case "useBrowserTheme":
       userTheme[THEME_FLAGS[key]] = isActive;
@@ -264,40 +281,9 @@ const handleSettingChange = (key, isActive) => {
 
 /* --------------------------------------------------------- engine picker */
 
-/* short prefixes you can type in front of a query: "!g linux" searches Google
-   once, "!g" on its own switches the engine. Keys are the shipped engines, any
-   other engine falls back to its first two letters. */
-const ENGINE_BANGS = {
-  startpage: "s",
-  google: "g",
-  duckduckgo: "ddg",
-  brave: "b",
-  bing: "bi",
-  perplexity: "p",
-  mistral: "m",
-  gemini: "gem",
-  chatgpt: "c",
-};
-
+/* "!g linux" searches Google for that one query, "!g" alone switches the engine.
+   The prefixes live in lib.js; a custom engine gets a free one when it is added. */
 const bangOf = (engine) => engine.bang ?? ENGINE_BANGS[engine.key] ?? engine.key.slice(0, 2);
-
-// a custom engine must not steal a bang that is already in use
-const uniqueBang = (key) => {
-  const taken = new Set(engines.map((engine) => bangOf(engine)));
-  let bang = ENGINE_BANGS[key] ?? key.slice(0, 2);
-  for (let n = 3; taken.has(bang) && n <= key.length; n += 1) bang = key.slice(0, n);
-  for (let n = 2; taken.has(bang); n += 1) bang = `${key.slice(0, 4)}${n}`;
-  return bang;
-};
-
-/* custom engines live in the same array as the shipped ones, marked so the
-   settings list can offer to remove them */
-const engineSlug = (label) => {
-  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "engine";
-  let key = base;
-  for (let n = 2; engines.some((engine) => engine.key === key); n += 1) key = `${base}-${n}`;
-  return key;
-};
 
 const addCustomEngine = () => {
   const label = engineLabelInput.value.trim();
@@ -306,8 +292,16 @@ const addCustomEngine = () => {
   if (!label || !url) return showToast("Enter a name and a search url");
   if (!/^https?:/.test(url.href)) return showToast("Search url must be an https address");
 
-  const key = engineSlug(label);
-  engines.push({ key, label, url: url.href, bang: uniqueBang(key), active: true, preferred: false, custom: true });
+  const key = engineSlug(label, engines.map((engine) => engine.key));
+  engines.push({
+    key,
+    label,
+    url: url.href,
+    bang: uniqueBang(key, engines.map((engine) => bangOf(engine))),
+    active: true,
+    preferred: false,
+    custom: true,
+  });
   store.set("searchEngines", engines);
   engineLabelInput.value = "";
   engineUrlInput.value = "";
@@ -399,9 +393,19 @@ const renderSettings = () => {
   const scrollTop = settingsPanel.scrollTop;
   settingsContainer.replaceChildren();
   enginesContainer.replaceChildren();
-  settings.forEach((option) => createOption(option, settingsContainer));
-  createOption({ ...HISTORY_OPTION, active: false }, settingsContainer);
+
+  let group = null;
+  for (const option of [...settings, { ...HISTORY_OPTION, active: false }]) {
+    if (option.group && option.group !== group) {
+      group = option.group;
+      settingsContainer.append(el("li", { className: "group", textContent: group }));
+    }
+    createOption(option, settingsContainer);
+  }
+
+  enginesContainer.append(el("li", { className: "group", textContent: "Search engines" }));
   engines.forEach((option) => createOption(option, enginesContainer, option.custom ? removeCustomEngine : null));
+
   settingsPanel.scrollTop = scrollTop;
   syncHistoryOption();
   renderIcons();
@@ -418,25 +422,6 @@ const toggleSettingsPanel = () => {
 };
 
 /* ------------------------------------------------------------------ search */
-
-// a search url with the query in it: "%s" is substituted, otherwise appended
-const searchTarget = (engine, term) => {
-  const encoded = encodeURIComponent(term);
-  return engine.url.includes("%s") ? engine.url.replace("%s", () => encoded) : engine.url + encoded;
-};
-
-// an http(s) url, a bare host promoted to https, or null
-const toUrl = (value) => {
-  for (const candidate of [value, `https://${value}`]) {
-    try {
-      const url = new URL(candidate);
-      if (/^https?:$/.test(url.protocol) && url.hostname.includes(".")) return url;
-    } catch {
-      // try the next candidate
-    }
-  }
-  return null;
-};
 
 const performSearch = (query) => {
   if (!query) return;
@@ -521,7 +506,6 @@ const getSuggestions = async (query) => {
 
   // the same site can arrive as both a top site and a history entry, sometimes
   // with a www prefix or a trailing slash, so dedupe on the normalised url
-  const siteKey = (url) => url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "").toLowerCase();
   const seen = new Set();
   return [...topSites.filter(matches), ...historyItems]
     .filter((site) => {
@@ -536,9 +520,13 @@ const getSuggestions = async (query) => {
 
 const buildSuggestionItem = (entry) => {
   const link = el("a", { className: "suggestion-link", href: entry.url });
+  // firefox hands top sites a data url with the real icon; anything else, and
+  // anything remote on other browsers, falls back to the site's letter
+  const mark = entry.favicon?.startsWith("data:")
+    ? el("img", { className: "suggestion-mark", src: entry.favicon, alt: "" })
+    : el("span", { className: "suggestion-mark", textContent: monogram(entry.url) });
   link.append(
-    // the mark is computed locally: no request leaves the browser
-    el("span", { className: "suggestion-mark", textContent: monogram(entry.url) }),
+    mark,
     el("span", { textContent: entry.title || entry.url }),
     el("span", { textContent: "\u2192" }),
     svgIcon(icons.loading.content, true),
@@ -599,12 +587,6 @@ let editTarget = null; // { id, title, url } being edited
 let pendingDeleteId = null;
 
 const newFavId = () => crypto.randomUUID().slice(0, 8);
-
-// the tile letter comes from the site itself: no favicon request is made
-const monogram = (url) => {
-  const host = new URL(url).hostname.replace(/^www\./, "");
-  return (host.match(/[a-z0-9]/i) ?? ["?"])[0].toLowerCase();
-};
 
 const favActionButton = (id, action, icon, title) => {
   const button = el("button", { className: "icon-btn top-site-action-button", title, tabIndex: -1 });
@@ -940,6 +922,10 @@ const initGlobalListeners = () => {
     if (event.target.tagName === "INPUT") handleEngineSettingChange(event.target.id, event.target.checked);
   });
 
+  // the browser's own add-ons manager can grant or revoke the optional permission
+  api.permissions?.onAdded?.addListener(syncHistoryOption);
+  api.permissions?.onRemoved?.addListener(syncHistoryOption);
+
   engineAddButton.addEventListener("click", addCustomEngine);
   [engineLabelInput, engineUrlInput].forEach((input) =>
     input.addEventListener("keydown", (event) => {
@@ -963,20 +949,22 @@ const initGlobalListeners = () => {
 const init = async () => {
   renderEngines();
   renderSettings();
-
-  // ponytail: one reload with ?focus, so the browser does not keep the caret in the omnibox
-  const wantsFocus = settings.some((option) => option.key === "focusOnLoad" && option.active);
-  if (wantsFocus && location.search !== "?focus") {
-    location.search = "?focus";
-    return;
-  }
-
   applyAllSettings();
   startClock();
   initGlobalListeners();
   initSuggestions();
   await initFavorites();
   renderIcons();
+
+  // A new tab may hand focus to the address bar right after it loads. A plain
+  // focus wins most of the time; when the page ends up without focus, one round
+  // trip with ?focus takes the caret back, and that load skips this check.
+  const wantsFocus = settings.some((option) => option.key === "focusOnLoad" && option.active);
+  if (wantsFocus && location.search !== "?focus") {
+    setTimeout(() => {
+      if (!document.hasFocus()) location.search = "?focus";
+    }, 250);
+  }
 };
 
 init();

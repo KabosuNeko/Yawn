@@ -68,62 +68,80 @@
     {
       "label": "Focus search bar on new tab",
       "active": true,
-      "key": "focusOnLoad"
+      "key": "focusOnLoad",
+      "group": "Interface"
     },
     {
       "label": "Hide search placeholder",
       "active": false,
-      "key": "showPlaceholder"
-    },
-    {
-      "label": "Hide settings button",
-      "active": false,
-      "key": "hideSettingsButton"
+      "key": "showPlaceholder",
+      "group": "Interface"
     },
     {
       "label": "Hide search engines list",
       "active": false,
-      "key": "hideEngines"
-    },
-    {
-      "label": "Hide favourite websites list",
-      "active": true,
-      "key": "hideTopSites"
-    },
-    {
-      "label": "Hide fav sites list's separator",
-      "active": false,
-      "key": "hideTopSitesSepar"
+      "key": "hideEngines",
+      "group": "Interface"
     },
     {
       "label": "Hide search button",
       "active": false,
-      "key": "hideSearchButton"
+      "key": "hideSearchButton",
+      "group": "Interface"
     },
     {
       "label": "Hide search engine logo",
       "active": false,
-      "key": "hideSearchLogo"
+      "key": "hideSearchLogo",
+      "group": "Interface"
     },
     {
       "label": "Hide search input",
       "active": false,
-      "key": "hideSearchInput"
+      "key": "hideSearchInput",
+      "group": "Interface"
     },
     {
-      "label": "switch to light mode",
+      "label": "Hide settings button",
       "active": false,
-      "key": "lightmode"
+      "key": "hideSettingsButton",
+      "group": "Interface"
     },
     {
-      "label": "Use browser theme",
+      "label": "Hide favourite websites list",
+      "active": true,
+      "key": "hideTopSites",
+      "group": "Favourites"
+    },
+    {
+      "label": "Hide fav sites list's separator",
       "active": false,
-      "key": "useBrowserTheme"
+      "key": "hideTopSitesSepar",
+      "group": "Favourites"
     },
     {
       "label": "Show clock",
       "active": true,
-      "key": "showClock"
+      "key": "showClock",
+      "group": "Clock"
+    },
+    {
+      "label": "12-hour clock",
+      "active": false,
+      "key": "clock12",
+      "group": "Clock"
+    },
+    {
+      "label": "switch to light mode",
+      "active": false,
+      "key": "lightmode",
+      "group": "Theme"
+    },
+    {
+      "label": "Use browser theme",
+      "active": false,
+      "key": "useBrowserTheme",
+      "group": "Theme"
     }
   ]
 }
