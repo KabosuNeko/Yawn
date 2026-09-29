@@ -1,36 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Yawn">
   <title>Yawn</title>
   <rect x="4" y="4" width="120" height="120" rx="8" fill="#000000"/>
-  <g transform="rotate(-2 64 64)">
-    <!-- hair, cream like the face and tucked under it -->
-    <g fill="#f4efe9">
-      <path d="M44 42 C40 32 35 23 30 14 C38 21 45 30 52 39 Z"/>
-      <path d="M58 38 C57 28 57 20 58 11 C62 20 65 28 67 37 Z"/>
-      <path d="M72 41 C80 32 87 25 95 17 C93 28 88 37 81 46 Z"/>
+  <g transform="rotate(-3 64 64)">
+    <!-- a hand-drawn crescent: two arcs that do not quite agree -->
+    <path fill="#f4efe9" d="M80 32 A41 43 0 1 0 82 104 A35 33 0 0 1 80 32 Z"/>
+    <!-- zzz, each one smaller than the last -->
+    <g fill="none" stroke="#f4efe9" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke-width="6" d="M84 86 H104 L84 64 H104"/>
+      <path stroke-width="4.6" d="M96 57 H110 L96 43 H110"/>
     </g>
-    <!-- the face: a solid, slightly squashed blob with a wonky edge -->
-    <path fill="#f4efe9" d="M58 38 C76 38 92 50 94 66 C96 82 88 98 72 103 C56 108 36 103 28 90 C20 77 24 50 40 42 C46 39 52 38 58 38 Z"/>
-    <!-- blush, the main reason it reads as cute at any size -->
-    <g fill="#e89a8a" opacity="0.9">
-      <ellipse cx="30" cy="86" rx="7.5" ry="4.5" transform="rotate(-8 30 86)"/>
-      <ellipse cx="86" cy="86" rx="7.5" ry="4.5" transform="rotate(8 86 86)"/>
-    </g>
-    <!-- big round eyes, low and wide apart, with a highlight -->
-    <g fill="#332b28">
-      <ellipse cx="42" cy="74" rx="7" ry="8.5" transform="rotate(-4 42 74)"/>
-      <ellipse cx="74" cy="74" rx="7" ry="8.5" transform="rotate(4 74 74)"/>
-    </g>
-    <g fill="#f4efe9">
-      <circle cx="39.5" cy="70.5" r="2.4"/>
-      <circle cx="71.5" cy="70.5" r="2.4"/>
-    </g>
-    <!-- a small open mouth, never a hole -->
-    <ellipse cx="58" cy="92" rx="5.5" ry="6.5" fill="#332b28" transform="rotate(-3 58 92)"/>
-    <ellipse cx="58" cy="95.5" rx="3.2" ry="2.6" fill="#dd6b5a"/>
-    <!-- zzz, only where there is room for it -->
-    <g fill="none" stroke="#f4efe9" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M100 36 H112 L100 24 H112"/>
-    </g>
-    <path fill="none" stroke="#f4efe9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M108 19 H117 L108 10 H117"/>
+    <!-- one warm sparkle, kept out of the small drawings -->
+    <path fill="#e89a8a" d="M112 24 C113.4 28 114.4 29.1 118 30 C114.4 30.9 113.4 32 112 36 C110.6 32 109.6 30.9 106 30 C109.6 29.1 110.6 28 112 24 Z"/>
   </g>
 </svg>
