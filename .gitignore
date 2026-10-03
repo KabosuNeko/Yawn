@@ -1,16 +1,9 @@
-# Packaged build artifacts - never commit or ship
-*.xpi
-*.crx
-*.pem
-*.zip
-web-ext-artifacts/
-
 # OS / editor noise
 .DS_Store
 Thumbs.db
 *.swp
 
-# not part of the extension: personal firefox chrome theme
+# personal firefox chrome theme, not part of this project
 userChrome.css
 
 # tool droppings

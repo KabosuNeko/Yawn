@@ -1,17 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Yawn">
   <title>Yawn</title>
-  <!-- source of the 48 and 128 pngs. Rendered with:
-       rsvg-convert -w 128 -h 128 images/src/icon.svg -o images/icon128.png
-       rsvg-convert -w 48 -h 48 images/src/icon.svg -o images/icon48.png -->
+  <!-- source of icon32.png, the favicon. This drawing is the bolder one: the
+       larger drawing greys out when it is squeezed into a small box. Rendered with:
+       rsvg-convert -w 32 -h 32 images/src/icon.svg -o images/icon32.png -->
   <g transform="rotate(-3 64 64)">
-    <!-- a hand-drawn crescent: two arcs that do not quite agree -->
-    <path fill="#f4efe9" d="M80 32 A41 43 0 1 0 82 104 A35 33 0 0 1 80 32 Z"/>
-    <!-- zzz, each one smaller than the last -->
-    <g fill="none" stroke="#f4efe9" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke-width="6" d="M84 86 H104 L84 64 H104"/>
-      <path stroke-width="4.6" d="M96 57 H110 L96 43 H110"/>
-    </g>
-    <!-- one warm sparkle, kept out of the small drawings -->
-    <path fill="#e89a8a" d="M112 24 C113.4 28 114.4 29.1 118 30 C114.4 30.9 113.4 32 112 36 C110.6 32 109.6 30.9 106 30 C109.6 29.1 110.6 28 112 24 Z"/>
+    <path fill="#f4efe9" d="M72 32 A39 41 0 1 0 74 102 A37 35 0 0 1 72 32 Z"/>
+    <path fill="none" stroke="#f4efe9" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" d="M88 78 H110 L88 46 H110"/>
   </g>
 </svg>
