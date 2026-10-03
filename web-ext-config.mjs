@@ -1,8 +1,6 @@
-/* `web-ext build` reads this, so test scaffolding and the local firefox chrome
-   theme never end up inside the package (git archive uses .gitattributes).
-   The list is belt and braces: web-ext matches the directory entry and its files
-   with different patterns. */
+/* `web-ext build` reads this. Two patterns per directory on purpose: web-ext
+   matches the directory entry and the files inside it separately. */
 export default {
   sourceDir: ".",
-  ignoreFiles: ["test", "test/*", "**/test/*", "**/*.test.js", "web-ext-config.mjs", "userChrome.css", "images/src"],
+  ignoreFiles: ["test", "test/*", "**/test/*", "**/*.test.js", "web-ext-config.mjs", "build-site.mjs", "userChrome.css", "images/src", "AGENTS.md", "docs", "docs/*"],
 };

@@ -1,4 +1,0 @@
-# Keep repo-only metadata out of `git archive` packages (xpi/crx builds)
-/.gitignore export-ignore
-/.gitattributes export-ignore
-/test export-ignore
