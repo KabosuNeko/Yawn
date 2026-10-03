@@ -2,131 +2,86 @@
 
 ## Project Overview
 
-Yawn is a zero-build, dependency-free Manifest V3 extension that replaces the new tab page: multi-engine search
-with `!bang` prefixes, keyboard navigation, optional history-backed suggestions, local favourites, a clock,
-light/dark plus Firefox browser-theme colours. Firefox is primary (`yawn@extension.local`, min 140); Chromium
-works apart from the theme API.
+Yawn is a new tab page served as static files: `index.html` plus one stylesheet, one ES module, two JSON data files
+and the images they use. There is no extension, no build step, no dependency and no backend. GitHub Pages serves
+the repository root, so `main` is both the source and the deployed site.
 
-It has to be an extension: Firefox has no pref for a custom new-tab URL, its settings UI only offers Firefox
-Home/Blank/installed extensions, and the `general.config.filename` AutoConfig sandbox (Firefox 157) can set prefs
-but no longer run privileged code. `chrome_url_overrides.newtab` is the only lever.
+It is shaped this way because neither Firefox nor Chromium has a setting for a custom new tab URL: without an
+extension the page can only be a bookmark, a pinned tab, or the homepage.
 
-**Invariant: no fingerprinting surface.** No remote requests, no telemetry, no host permissions, no remote fonts
-or favicons, no per-install value exposed to web content. Tiles and suggestions use letters unless Firefox
-itself hands over a `data:` icon.
+**Invariant: no fingerprinting surface.** No requests except its own files, no telemetry, no host permissions, no
+remote fonts and no remote favicons - a tile shows a letter instead. Keep it that way.
 
 ## House Rule: ponytail
 
 Lazy senior dev mode: stop at the first rung that holds - does it need to exist / is it already here / stdlib /
-platform / one line / then only the minimum that works. Deletion over addition, boring over clever, fewest
-files, no new dependencies, no abstractions nobody asked for. Comments only carry facts you cannot derive from
-the code; mark a deliberate corner cut with `ponytail: <ceiling, upgrade path>`. Never lazy about validation at
-trust boundaries, error handling that prevents data loss, security, accessibility, or anything requested.
-Non-trivial logic leaves one runnable check behind.
+platform / one line / then only the minimum that works. Deletion over addition, boring over clever, fewest files,
+no new dependencies, no abstractions nobody asked for. Comments only carry facts you cannot derive from the code;
+mark a deliberate corner cut with `ponytail: <ceiling, upgrade path>`. Never lazy about validation at trust
+boundaries, error handling that prevents data loss, security, accessibility, or anything requested. Non-trivial
+logic leaves one runnable check behind.
 
 ## Architecture & Data Flow
 
-- `new_tab.html` loads `new_tab.js` as a module; that one file is the whole page. Boot order: `await fetch` of
-  `icons.json` + `defaults.json` -> DOM refs -> state from `localStorage` -> handlers -> `init()` last.
+- `index.html` loads `new_tab.css` and `new_tab.js` as a module; `new_tab.js` imports `lib.js`, fetches
+  `icons.json` and `defaults.json`, then renders. Boot order is load-bearing: fetch, DOM refs, state, handlers,
+  `init()` last.
 - `lib.js` is pure (no DOM, no browser APIs) so `node --test` can cover it.
-- State: `localStorage` keys `searchEngines`, `settingsOptions`, `topSites`, merged against `defaults.json` on
-  load (saved `active` wins per settings key, missing engines are re-seeded), so new keys need no migration.
-  Favourites seed once from `api.topSites.get()`, capped at 8.
-- An event mutates module state, persists it, and re-renders the affected container with `replaceChildren`.
-- Browser APIs: `const api = globalThis.browser ?? globalThis.chrome`, promise-style. Permissions: `topSites`
-  (required), `history` (optional, requested from the drawer; that toggle is synthesised, not stored, and its
-  truth is `api.permissions.contains`).
-- Search: a leading `!bang` goes through `toUrl()` (navigate) or `searchTarget()` (search); a lone bang switches
-  the preferred engine.
+- State is `localStorage` under three keys - `searchEngines`, `settingsOptions`, `topSites` (the favourites) -
+  merged against `defaults.json` on load, so a new settings key needs no migration. `topSites` is only a storage
+  key name; nothing here talks to a browser API.
+- An event mutates module state, persists it, and re-renders the containing element with `replaceChildren`.
+- Search: a leading `!bang` token goes through `toUrl()` (navigate) or `searchTarget()` (search); a lone bang
+  switches the preferred engine.
+- Nothing may call `browser.*` or `chrome.*`: the page is unprivileged, and such a call is the one mistake that
+  breaks it everywhere. Same for new `fetch` calls or remote assets.
 
 ## Key Directories
 
 | Path | Purpose |
 |---|---|
-| `new_tab.html` / `new_tab.css` / `new_tab.js` | the page: markup, styles, all behaviour (~940 lines of JS) |
-| `lib.js` | pure helpers, the only unit-tested file: `ENGINE_BANGS`, `toUrl`, `searchTarget`, `monogram`, `siteKey`, `engineSlug`, `uniqueBang` |
-| `defaults.json` | shipped engines (9) and settings toggles (13) |
-| `icons.json` | SVG inner-markup map: `search, loading, settings, check, pen, plus, trash` |
-| `manifest.json` | MV3 manifest: permissions, gecko settings, newtab override |
-| `build-site.mjs` | builds the GitHub Pages copy into `docs/` (self-contained `index.html`) |
-| `docs/` | generated pages site - committed, never part of the `.xpi` |
+| `index.html` | the page; the only entry point Pages serves |
+| `new_tab.js` / `new_tab.css` | all behaviour and all styling |
+| `lib.js` | pure helpers, the only unit-tested file |
+| `defaults.json` | shipped engines (9) and settings toggles (12) |
+| `icons.json` | inline SVG markup for the UI icons |
+| `images/` | `logos/` engine marks, `icon32.png` favicon, `logo.png` and `preview.png` for the README |
+| `images/src/icon.svg` | the drawing behind `icon32.png` |
 | `test/lib.test.js` | `node:test` suite for `lib.js` |
-| `images/` | manifest PNGs; `images/src` SVG sources; `images/logos` engine WebP |
-| `web-ext-config.mjs` | what the `.xpi` must not contain: `test/`, `docs/`, `build-site.mjs`, `AGENTS.md`, `userChrome.css`, `images/src` |
-| `userChrome.css` | personal Firefox chrome theme - gitignored, not part of the extension |
 
-## Browser Support
-
-Both browsers run the same MV3 build; only the theme call branches.
-
-- Chromium (verified live, Chrome 150, unpacked): `chrome://newtab` is overridden; `topSites` and `permissions`
-  return promises; `chrome.theme` does not exist, so "use browser theme" does nothing; `chrome.history` stays
-  undefined until granted. `browser_specific_settings` is ignored and the extension still loads.
-- Firefox: `browser.*` promise APIs, `browser.theme.getCurrent()` colours, and top sites that carry `data:` favicons.
-- Chrome only allows `permissions.request` inside a real user gesture, and a headless run cannot show its prompt.
-
-## Install & Verify
+## Development
 
 ```bash
-# Chromium: chrome://extensions -> Developer mode -> Load unpacked -> this folder (no signing needed)
-chromium --load-extension="$PWD" --disable-extensions-except="$PWD"   # headless equivalent
-
-# Firefox release refuses unsigned add-ons. Either load it temporarily (about:debugging#/runtime/this-firefox ->
-# Load Temporary Add-on -> manifest.json, gone after a restart), or use Nightly/Developer Edition/ESR with
-# xpinstall.signatures.required=false and this folder copied to <profile>/extensions/yawn@extension.local/,
-# or sign for a permanent install: npx web-ext sign --api-key ... --api-secret ... --channel unlisted
+python3 -m http.server 8080   # then open http://127.0.0.1:8080/
+node --test test/             # 7 tests over lib.js
 ```
 
-After any of those, Ctrl+T must show Yawn. Debugging a running install: Firefox prints page `console.log` to stdout
-with `user_pref("devtools.console.stdout.content", true)`; MV3 CSP blocks inline scripts, so a probe has to be its own
-`.js` file; and `firefox --screenshot <moz-extension-url>` loads the page *without* extension privileges.
-
-## Development Commands
-
-```bash
-/usr/bin/node --test test/   # 8 tests; PATH `node` here is Bun's shim and rejects the suite
-npx web-ext lint             # must stay at 0 errors
-npx web-ext run              # or about:debugging#/runtime/this-firefox -> Load Temporary Add-on
-npx web-ext build            # -> web-ext-artifacts/, driven by web-ext-config.mjs
-
-node build-site.mjs          # rebuild docs/index.html (+ docs/images) after editing sources
-```
-
-`docs/` is the same page built for GitHub Pages (Settings -> Pages -> Deploy from a branch -> `main` / `docs`).
-`build-site.mjs` inlines everything and patches the two `browser.topSites` calls into no-ops, asserting each anchor so
-a moved source line fails the build. Rerun it after source changes; `docs/` never enters the `.xpi`.
-
-There is no `package.json`, no CI and no linter config; `build-site.mjs` is the only build step.
+The page must be served: it fetches the two JSON files and imports `lib.js` as a module, and `file://` blocks both.
+Pushing to `main` is the deploy - Pages serves the repository root, there is nothing to build or publish by hand.
 
 ## Code Conventions & Common Patterns
 
 - ESM, `const`/`let`, arrow-function consts only (no `class`, no `function` declarations), optional chaining,
-  nullish coalescing, top-level `await`. `UPPER_SNAKE_CASE` module constants, `camelCase` otherwise, handlers
-  named `initX` / `renderX` / `applyX` / `handleX` / `toggleX` / `closeX`, predicates `hasX` / `isX`.
-- No `console.*`; user feedback goes through `showToast(message, autoHide)`; destructive actions use a
-  non-auto-hiding confirm toast. Swallow-and-fallback at the boundary (`store.get` parse guard, `.catch(() => [])`).
+  nullish coalescing, top-level `await`. `UPPER_SNAKE_CASE` module constants; handlers named `initX` / `renderX` /
+  `applyX` / `handleX` / `toggleX` / `closeX`; predicates `hasX` / `isX` / `clockIs12h`.
+- No `console.*`; user feedback goes through `showToast(message, autoHide)`, destructive actions through a
+  non-auto-hiding confirm. Swallow-and-fallback at the boundary (`store.get` parse guard).
 - DOM contract: ids for singleton structure, kebab-case classes for reusable parts, `data-*` as the JS link
   (`data-icon`, `data-id`, `data-key`, `data-action`). State classes: `hidden`, `adding`, `minimal`,
-  `no-separator`, `dragging`, `drop-target`, `loading`, `prevent-ui-interactivity`. Keep the `aria-*` renderers
-  set in sync when editing markup.
-- Theming is CSS custom properties written on `document.documentElement.style`; `--hairline`/`--surface` are
-  derived in CSS and `THEME_ROLE_KEYS` maps Firefox theme roles onto the palette.
-- Permissioned calls are guarded (`if (!api.x) return`, `api.permissions?.onAdded?.addListener`) and wrapped in
-  `try`/`catch` that reports through a toast.
-- Adding an engine is three edits in lockstep: `defaults.json`, `ENGINE_BANGS` in `lib.js`, and
-  `images/logos/<key>.webp` (a missing logo shows a monogram, so it is a visible regression).
+  `no-separator`, `dragging`, `drop-target`, `prevent-ui-interactivity`. Keep the `aria-*` renderers in sync.
+- Theming is CSS custom properties written on `document.documentElement.style`; `--hairline` and `--surface` are
+  derived in CSS, so a palette only needs `--background`, `--foreground` and `--foreground50`.
 
 ## Testing & QA
 
-- `node:test` + `node:assert/strict` in `test/lib.test.js` covers the pure helpers. `npx web-ext lint` at
-  0 errors is the other half of the gate. There is no coverage threshold and no CI.
-- The page has no automated test in the repo: load the extension and exercise the changed path - bang and plain
-  search, suggestions with and without the history permission, favourites add/edit/delete/reorder, each setting,
-  reset, `?focus`.
+- `node:test` + `node:assert/strict` in `test/lib.test.js` covers the pure helpers (`toUrl`, `searchTarget`,
+  `monogram`, `engineSlug`, `uniqueBang`). There is no coverage threshold and no CI.
+- The page itself has no automated test: serve it and exercise the changed path - search and `!bang`, engine
+  switching, favourites add/edit/delete/reorder, each setting, reset, `?focus`. Defaults to remember: dark theme,
+  favourites capped at 8, and `hideTopSites` ships on, so the favourites section starts hidden.
 
 ## Known Sharp Edges
 
 - `hideTopSites` ships `active: true`, which *hides* the favourites section until the user turns it off.
-- `store.get` falls back only for missing/corrupt JSON: an empty array is a valid stored value, and the seeding
-  path treats it as "seed from top sites".
-- `AGENTS.md` is not in `web-ext-config.mjs` `ignoreFiles`, so `web-ext build` packages it as well.
+- `store.get` falls back only for missing or corrupt JSON: an empty array is a valid stored value.
+- The page cannot run from `file://`; anything that assumes a plain double-click will break.
