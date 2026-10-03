@@ -12,3 +12,6 @@ Thumbs.db
 
 # not part of the extension: personal firefox chrome theme
 userChrome.css
+
+# tool droppings
+*.har
