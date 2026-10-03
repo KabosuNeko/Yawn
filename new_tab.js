@@ -54,8 +54,6 @@ const settings = defaults.settingsOptions.map((option) => {
   const saved = savedSettings?.find((candidate) => candidate.key === option.key);
   return saved ? { ...option, active: saved.active } : { ...option };
 });
-const userTheme = { light: false };
-
 const clockIs12h = () => settings.some((option) => option.key === "clock12" && option.active);
 
 const paintClock = () => {
@@ -130,8 +128,10 @@ const DARK_COLORS = {
   "--foreground50": "hsl(0, 0%, 60%)",
 };
 
+const lightMode = () => settings.some((option) => option.key === "lightmode" && option.active);
+
 const applyTheme = () => {
-  const colors = userTheme.light ? LIGHT_COLORS : DARK_COLORS;
+  const colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
 
   for (const [name, value] of Object.entries(colors)) {
     document.documentElement.style.setProperty(name, value);
@@ -194,7 +194,6 @@ const applySetting = (key, isActive) => {
       paintClock();
       break;
     case "lightmode":
-      userTheme.light = isActive;
       applyTheme();
       break;
   }
