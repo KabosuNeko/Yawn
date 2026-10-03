@@ -5,6 +5,9 @@
   --foreground50: hsl(0, 0%, 60%);
   /* the page canvas on its own, so it can go transparent while panels stay opaque */
   --page-background: var(--background);
+  /* the two lines the page draws straight on that canvas: the bar frame and the separator */
+  --page-hairline: var(--hairline);
+  --page-focus: var(--foreground);
 
   /* Derived from the foreground, so a theme that only styles the toolbar still
      gets usable hairlines and a hover surface without providing those keys. */
@@ -134,13 +137,13 @@ ul {
   gap: var(--sp-2);
   height: var(--bar);
   padding-inline: var(--sp-3);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--page-hairline);
   border-radius: var(--radius);
   transition: border-color var(--fast) var(--ease);
 }
 
 #bar:focus-within {
-  border-color: var(--foreground);
+  border-color: var(--page-focus);
 }
 
 /* "Hide search input" setting: the box loses its outline */
@@ -275,7 +278,7 @@ ul {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--page-hairline);
   padding-top: var(--sp-3);
 }
 

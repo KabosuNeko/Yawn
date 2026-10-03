@@ -88,8 +88,10 @@ Pushing to `main` is the deploy - Pages serves the repository root, there is not
 - The palette can only follow the system's light or dark preference (`prefers-color-scheme`, the `systemTheme`
   setting). The browser's own theme colours are not readable from web content, so there is no equivalent of the
   `browser.theme` API here - do not go looking for one.
-- `--page-background` is the page canvas alone (`--background` also paints the drawer, the toast, the engine menu
-  and the check marks). The `transparentBackground` setting points it at `transparent`; only `body` may use it.
+- The `--page-*` variables are what the page draws straight on its own canvas: `--page-background` (only `body` uses
+  it) and the two lines `--page-hairline` / `--page-focus` (the bar frame and the favourites separator). The
+  `transparentBackground` setting blanks all three. `--background` stays opaque on purpose - it also paints the
+  drawer, the toast, the engine menu and the check marks.
 - A transparent page is only visible through a browser that is set up for it - Firefox needs
   `browser.tabs.allow_transparent_browser = true` plus a compositor. Without that it falls back to the browser's
   default canvas colour, which is why the setting ships off.

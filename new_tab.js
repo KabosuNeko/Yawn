@@ -135,9 +135,14 @@ const lightMode = () => (settingOn("systemTheme") ? systemPrefersLight() : setti
 
 const applyTheme = () => {
   const colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
-  const page = settingOn("transparentBackground") ? "transparent" : colors["--background"];
+  const hidden = settingOn("transparentBackground");
+  const page = {
+    "--page-background": hidden ? "transparent" : colors["--background"],
+    "--page-hairline": hidden ? "transparent" : "var(--hairline)",
+    "--page-focus": hidden ? "transparent" : "var(--foreground)",
+  };
 
-  for (const [name, value] of Object.entries({ ...colors, "--page-background": page })) {
+  for (const [name, value] of Object.entries({ ...colors, ...page })) {
     document.documentElement.style.setProperty(name, value);
   }
 };
