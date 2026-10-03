@@ -26,7 +26,7 @@ export const toUrl = (value) => {
       const url = new URL(candidate);
       if (/^https?:$/.test(url.protocol) && url.hostname.includes(".")) return url;
     } catch {
-      // try the next candidate
+      // next candidate
     }
   }
   return null;

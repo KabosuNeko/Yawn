@@ -1,16 +1,14 @@
-/* ------------------------------------------------------------------ tokens */
 :root {
   /* the palette variables are written at runtime by new_tab.js */
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 80%);
-  --foreground50: hsl(0, 0%, 60%); /* muted text; a theme may override it */
+  --foreground50: hsl(0, 0%, 60%);
 
   /* Derived from the foreground, so a theme that only styles the toolbar still
      gets usable hairlines and a hover surface without providing those keys. */
   --hairline: color-mix(in srgb, var(--foreground) 50%, transparent);
   --surface: color-mix(in srgb, var(--foreground) 12%, transparent);
 
-  /* type */
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
   --text-xs: 0.75rem;
@@ -19,7 +17,6 @@
   --text-lg: 1.15rem;
   --leading: 1.5;
 
-  /* space */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
@@ -27,7 +24,6 @@
   --sp-5: 1.5rem;
   --sp-6: 2rem;
 
-  /* geometry */
   --width: 34rem;
   --radius: 0; /* square, to match a chrome that zeroes its own radii */
   --bar: 2.75rem;
@@ -35,13 +31,11 @@
   --tap: 1.5rem; /* minimum hit target, wcag 2.5.8 is 24px */
   --panel-width: 21rem;
 
-  /* motion */
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --fast: 120ms;
   --base: 240ms;
 }
 
-/* -------------------------------------------------------------------- base */
 *,
 *::before,
 *::after {
@@ -101,13 +95,10 @@ ul {
   pointer-events: none;
 }
 
-/* ---------------------------------------------------------- icon buttons */
 .icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--icon);
-  height: var(--icon);
   flex: none;
   opacity: 0.5;
   transition: opacity var(--fast) var(--ease);
@@ -127,7 +118,6 @@ ul {
   stroke-width: 1.5;
 }
 
-/* --------------------------------------------------------------- the page */
 #app {
   position: relative;
   display: flex;
@@ -136,7 +126,6 @@ ul {
   width: min(92vw, var(--width));
 }
 
-/* ------------------------------------------------------------ command bar */
 #bar {
   position: relative;
   display: flex;
@@ -211,11 +200,6 @@ ul {
   opacity: 1;
 }
 
-#search-btn.disabled {
-  display: none !important;
-}
-
-/* engine picker, inside the bar */
 #engine-btn {
   display: flex;
   align-items: center;
@@ -234,13 +218,14 @@ ul {
 
 #engine-btn:hover,
 #engine-btn:focus-visible,
-#engine-btn[aria-expanded="true"] {
+#engine-btn[aria-expanded="true"],
+#reset-btn:hover,
+#reset-btn:focus-visible {
   color: var(--foreground);
   background: var(--surface);
 }
 
 #engine-btn .caret {
-  font-size: var(--text-sm);
   opacity: 0.8;
   line-height: 1;
 }
@@ -269,6 +254,7 @@ ul {
 }
 
 #engine-menu .bang {
+  /* the row turns --foreground when it is hovered or selected; the bang stays muted */
   color: var(--foreground50);
   opacity: 0.75;
 }
@@ -284,7 +270,6 @@ ul {
   color: var(--foreground);
 }
 
-/* ------------------------------------------------------------ suggestions */
 #suggestions-list {
   position: absolute;
   inset-inline: 0;
@@ -382,7 +367,6 @@ img.suggestion-mark {
   }
 }
 
-/* ------------------------------------------------------------- favourites */
 #favorites-section {
   display: flex;
   flex-direction: column;
@@ -443,7 +427,6 @@ img.suggestion-mark {
   color: var(--foreground);
 }
 
-/* edit and delete appear on hover or keyboard focus, and take no width at rest */
 .tile-actions {
   display: flex;
   gap: var(--sp-1);
@@ -459,7 +442,8 @@ img.suggestion-mark {
   opacity: 1;
 }
 
-.tile-actions .icon-btn {
+.tile-actions .icon-btn,
+#engine-add .icon-btn {
   width: var(--tap);
   height: var(--tap);
 }
@@ -469,7 +453,6 @@ img.suggestion-mark {
   height: 1.125rem;
 }
 
-/* add / edit row, only while the add tile is active */
 #add-top-site-input-container {
   display: none;
   align-items: center;
@@ -497,7 +480,6 @@ img.suggestion-mark {
   color: var(--foreground50);
 }
 
-/* --------------------------------------------------------------- settings */
 #settings-trigger {
   position: fixed;
   right: 0;
@@ -551,7 +533,6 @@ img.suggestion-mark {
   position: relative;
 }
 
-/* small muted heading for each drawer section */
 #settings-panel .group {
   padding: var(--sp-3) var(--sp-2) var(--sp-1);
   font-size: var(--text-xs);
@@ -616,9 +597,6 @@ img.suggestion-mark {
 #settings-panel .check svg polyline,
 #settings-panel .check svg path {
   fill: var(--background);
-}
-
-#settings-panel .check svg path {
   stroke-dasharray: 60;
   transition: stroke-dashoffset var(--base) linear;
   transition-delay: 0.2s;
@@ -648,7 +626,6 @@ img.suggestion-mark {
   background: var(--hairline);
 }
 
-/* ------------------------------------------------------------------ toast */
 #toast {
   position: fixed;
   left: 50%;
@@ -663,7 +640,6 @@ img.suggestion-mark {
   z-index: 10;
 }
 
-/* ------------------------------------------------------------------- clock */
 #clock-block {
   display: flex;
   flex-direction: column;
@@ -686,7 +662,6 @@ img.suggestion-mark {
   color: var(--foreground50);
 }
 
-/* ----------------------------------------------------- drawer: add engine */
 #engine-add {
   display: flex;
   align-items: center;
@@ -714,11 +689,6 @@ img.suggestion-mark {
   color: var(--foreground50);
 }
 
-#engine-add .icon-btn {
-  width: var(--tap);
-  height: var(--tap);
-}
-
 #reset-btn {
   padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius);
@@ -727,13 +697,6 @@ img.suggestion-mark {
   transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
-#reset-btn:hover,
-#reset-btn:focus-visible {
-  color: var(--foreground);
-  background: var(--surface);
-}
-
-/* custom engines get a remove control; it keeps out of the way until needed */
 #settings-panel .row-remove {
   position: absolute;
   top: 50%;
@@ -758,7 +721,6 @@ img.suggestion-mark {
   padding-inline-end: var(--sp-5);
 }
 
-/* dragging a favourite tile onto another one reorders them */
 .tile.dragging {
   opacity: 0.4;
 }
@@ -768,7 +730,6 @@ img.suggestion-mark {
   background: var(--surface);
 }
 
-/* ------------------------------------------------------------- narrow view */
 @media (max-width: 32rem) {
   :root {
     --bar: 2.5rem;

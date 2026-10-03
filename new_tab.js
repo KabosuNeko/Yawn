@@ -7,7 +7,6 @@ const loadJson = async (path) => (await fetch(path)).json();
 
 const [icons, defaults] = await Promise.all([loadJson("./icons.json"), loadJson("./defaults.json")]);
 
-/* persisted state, read once at load and written back on change */
 const store = {
   get(key, fallback) {
     try {
@@ -42,8 +41,6 @@ const engineUrlInput = $("#engine-url-input");
 const engineAddButton = $("#engine-add-btn");
 const resetButton = $("#reset-btn");
 
-/* ------------------------------------------------------------------- state */
-
 const engines = store.get("searchEngines", defaults.searchEngines);
 // storage could be empty (cleared, corrupted): fall back and heal it
 if (!engines.length) {
@@ -60,8 +57,6 @@ const settings = defaults.settingsOptions.map((option) => {
   return saved ? { ...option, active: saved.active } : { ...option };
 });
 const userTheme = { light: false, browser: false };
-
-/* ------------------------------------------------------------------- clock */
 
 const clockIs12h = () => settings.some((option) => option.key === "clock12" && option.active);
 
@@ -92,8 +87,6 @@ const startClock = () => {
   }, 1000);
 };
 
-/* ------------------------------------------------------------------- toast */
-
 let toastTimer;
 const hideToast = () => {
   toast.classList.add("hidden");
@@ -105,8 +98,6 @@ const showToast = (message, autoHide = true) => {
   toast.classList.remove("hidden");
   if (autoHide) toastTimer = setTimeout(hideToast, 5000);
 };
-
-/* ------------------------------------------------------------------- icons */
 
 const svgIcon = (content, sized = false) => {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -128,8 +119,6 @@ const renderIcons = () =>
     const content = icons[btn.dataset.icon]?.content;
     if (content) btn.replaceChildren(svgIcon(content));
   });
-
-/* ------------------------------------------------------------------- theme */
 
 const LIGHT_COLORS = {
   "--background": "#ffffff",
@@ -173,8 +162,6 @@ const applyTheme = async () => {
     document.documentElement.style.setProperty(name, value);
   }
 };
-
-/* --------------------------------------------------------------- settings */
 
 const HISTORY_PERMISSION = "history";
 const HISTORY_OPTION = {
@@ -252,7 +239,7 @@ const applySetting = (key, isActive) => {
       toggle("#favorites-section", "no-separator");
       break;
     case "hideSearchButton":
-      toggle("#search-btn", "disabled");
+      toggle("#search-btn");
       break;
     case "hideSearchLogo":
       toggle("#searchIcon");
@@ -276,7 +263,6 @@ const applySetting = (key, isActive) => {
 
 const applyAllSettings = () => settings.forEach((option) => applySetting(option.key, option.active));
 
-// lightmode and useBrowserTheme are mutually exclusive: turning one on turns the other off
 const handleSettingChange = (key, isActive) => {
   const option = settings.find((s) => s.key === key);
   if (!option) return;
@@ -294,8 +280,6 @@ const handleSettingChange = (key, isActive) => {
   applySetting(key, isActive);
 };
 
-/* --------------------------------------------------------- engine picker */
-
 /* "!g linux" searches Google for that one query, "!g" alone switches the engine.
    The prefixes live in lib.js; a custom engine gets a free one when it is added. */
 const bangOf = (engine) => engine.bang ?? ENGINE_BANGS[engine.key] ?? engine.key.slice(0, 2);
@@ -305,7 +289,6 @@ const addCustomEngine = () => {
   const url = toUrl(engineUrlInput.value.trim());
 
   if (!label || !url) return showToast("Enter a name and a search url");
-  if (!/^https?:/.test(url.href)) return showToast("Search url must be an https address");
 
   const key = engineSlug(label, engines.map((engine) => engine.key));
   engines.push({
@@ -352,7 +335,6 @@ const openEngineMenu = () => {
 
 const renderEngineIcon = (engine) => {
   if (!engine) return;
-  // shipped engines have a logo file, custom ones get a letter instead
   const icon = engine.custom
     ? el("span", { className: "engine-mark", textContent: engine.label.slice(0, 1).toLowerCase() })
     : el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` });
@@ -410,7 +392,7 @@ const renderSettings = () => {
   enginesContainer.replaceChildren();
 
   let group = null;
-  for (const option of [...settings, { ...HISTORY_OPTION, active: false }]) {
+  for (const option of [...settings, HISTORY_OPTION]) {
     if (option.group && option.group !== group) {
       group = option.group;
       settingsContainer.append(el("li", { className: "group", textContent: group }));
@@ -428,15 +410,11 @@ const renderSettings = () => {
 
 const closeSettingsPanel = () => {
   settingsPanel.classList.add("hidden");
-  settingsBtn.classList.remove("disabled");
 };
 
 const toggleSettingsPanel = () => {
   settingsPanel.classList.toggle("hidden");
-  settingsBtn.classList.toggle("disabled");
 };
-
-/* ------------------------------------------------------------------ search */
 
 const performSearch = (query) => {
   if (!query) return;
@@ -445,7 +423,6 @@ const performSearch = (query) => {
   const bang = head.startsWith("!") ? head.slice(1).toLowerCase() : null;
   const wanted = bang ? engines.find((engine) => bangOf(engine) === bang) : null;
 
-  // "!g" alone switches the engine instead of searching for it
   if (wanted && !tail.length) {
     selectEngine(wanted.key);
     searchInput.value = "";
@@ -494,8 +471,6 @@ const handleEngineSettingChange = (key, isActive) => {
   store.set("searchEngines", engines);
   renderEngines();
 };
-
-/* ------------------------------------------------------------- suggestions */
 
 /* history is an optional permission, granted from the settings drawer, so every
    reader of it has to cope with it being absent */
@@ -547,7 +522,7 @@ const buildSuggestionItem = (entry) => {
     svgIcon(icons.loading.content, true),
   );
 
-  const row = el("li", { className: "search-result-item" });
+  const row = document.createElement("li");
   row.append(link);
   return row;
 };
@@ -590,15 +565,13 @@ const focusInputAtEnd = () => {
   );
 };
 
-/* -------------------------------------------------------------- favourites */
-
 const FAVORITES_KEY = "topSites";
 const MAX_FAVORITES = 8;
 const ADD_PROMPT = { value: "", placeholder: "Add new favourite website link", action: "addNewUrl" };
 
 let favorites = store.get(FAVORITES_KEY, []);
-let newFavUrl = null; // url waiting for its title, while adding
-let editTarget = null; // { id, title, url } being edited
+let newFavUrl = null;
+let editTarget = null;
 let pendingDeleteId = null;
 
 const newFavId = () => crypto.randomUUID().slice(0, 8);
@@ -658,7 +631,6 @@ const submitFavorite = () => {
   if (!value) return;
 
   switch (topSiteInput.dataset.action) {
-    // second step of add: the title arrived, save the site
     case "addNewTitle":
       favorites.push({ id: newFavId(), title: value, url: newFavUrl });
       newFavUrl = null;
@@ -667,7 +639,6 @@ const submitFavorite = () => {
       setInputMode(ADD_PROMPT, { message: "Link is added successfully" });
       break;
 
-    // second step of edit: the new title arrived, save it
     case "editTitle":
       editTarget = { ...editTarget, title: value };
       favorites = favorites.map((site) => (site.id === editTarget.id ? editTarget : site));
@@ -677,7 +648,6 @@ const submitFavorite = () => {
       setInputMode(ADD_PROMPT, { message: "Link is updated successfully" });
       break;
 
-    // first step: a url arrived, ask for its title
     default: {
       const url = toUrl(value);
       if (!url) return showToast("Please Enter Valid URL. it must start with https://");
@@ -739,8 +709,6 @@ const cancelDelete = () => {
   pendingDeleteId = null;
 };
 
-/* ------------------------------------------------ reordering favourites */
-
 let draggedId = null;
 
 const persistFavoriteOrder = (id) => {
@@ -749,21 +717,17 @@ const persistFavoriteOrder = (id) => {
   favoritesList.querySelector(`[data-id="${id}"] .tile-link`)?.focus();
 };
 
-const moveFavorite = (id, targetId) => {
+const reorderFavorite = (id, to) => {
   const from = favorites.findIndex((site) => site.id === id);
-  const to = favorites.findIndex((site) => site.id === targetId);
-  if (from < 0 || to < 0 || from === to) return;
+  if (from < 0 || to < 0 || to >= favorites.length || from === to) return;
   favorites.splice(to, 0, ...favorites.splice(from, 1));
   persistFavoriteOrder(id);
 };
 
-const moveFavoriteBy = (id, step) => {
-  const from = favorites.findIndex((site) => site.id === id);
-  const to = from + step;
-  if (from < 0 || to < 0 || to >= favorites.length) return;
-  favorites.splice(to, 0, ...favorites.splice(from, 1));
-  persistFavoriteOrder(id);
-};
+const moveFavorite = (id, targetId) => reorderFavorite(id, favorites.findIndex((site) => site.id === targetId));
+
+const moveFavoriteBy = (id, step) =>
+  reorderFavorite(id, favorites.findIndex((site) => site.id === id) + step);
 
 const initFavoriteOrdering = () => {
   favoritesList.addEventListener("dragstart", (event) => {
@@ -830,8 +794,6 @@ const initFavorites = async () => {
   initFavoriteOrdering();
 };
 
-/* -------------------------------------------------------------------- init */
-
 const initGlobalListeners = () => {
   document.addEventListener("keydown", (event) => {
     const inEngineMenu = engineMenu.contains(document.activeElement);
@@ -855,7 +817,6 @@ const initGlobalListeners = () => {
       return;
     }
 
-    // any text field owns the keyboard: no shortcuts, no suggestion walk
     const typing = document.activeElement?.matches?.(
       'input:not([type="checkbox"]), textarea, [contenteditable]',
     );
@@ -872,7 +833,6 @@ const initGlobalListeners = () => {
       return;
     }
 
-    // ctrl + arrows reorder the focused favourite, the keyboard twin of dragging
     if (event.ctrlKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
       const tile = document.activeElement?.closest?.(".tile[data-id]");
       if (tile) {
@@ -923,7 +883,6 @@ const initGlobalListeners = () => {
     const outside = !settingsPanel.contains(event.target) && !settingsBtn.contains(event.target);
     if (outside && !settingsPanel.classList.contains("hidden")) closeSettingsPanel();
 
-    // a click anywhere that is not a control puts the caret back in the bar
     if (!event.target.closest("a, button, input, textarea, #settings-panel")) searchInput.focus();
   });
 
@@ -954,7 +913,6 @@ const initGlobalListeners = () => {
     event.target.closest(".suggestion-link")?.classList.add("loading");
   });
 
-  // let the cursor wheel scroll the favourite tiles
   favoritesList.addEventListener("wheel", (event) => {
     event.preventDefault();
     favoritesList.scrollLeft += event.deltaY;
@@ -969,7 +927,6 @@ const init = async () => {
   initGlobalListeners();
   initSuggestions();
   await initFavorites();
-  renderIcons();
 
   // A new tab may hand focus to the address bar right after it loads. A plain
   // focus wins most of the time; when the page ends up without focus, one round
