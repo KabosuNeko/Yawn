@@ -54,7 +54,8 @@ const settings = defaults.settingsOptions.map((option) => {
   const saved = savedSettings?.find((candidate) => candidate.key === option.key);
   return saved ? { ...option, active: saved.active } : { ...option };
 });
-const clockIs12h = () => settings.some((option) => option.key === "clock12" && option.active);
+const settingOn = (key) => settings.some((option) => option.key === key && option.active);
+const clockIs12h = () => settingOn("clock12");
 
 const paintClock = () => {
   const now = new Date();
@@ -128,7 +129,9 @@ const DARK_COLORS = {
   "--foreground50": "hsl(0, 0%, 60%)",
 };
 
-const lightMode = () => settings.some((option) => option.key === "lightmode" && option.active);
+/* A plain page cannot read the browser's theme colours, only whether the system asks for light or dark. */
+const systemPrefersLight = () => matchMedia("(prefers-color-scheme: light)").matches;
+const lightMode = () => (settingOn("systemTheme") ? systemPrefersLight() : settingOn("lightmode"));
 
 const applyTheme = () => {
   const colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
@@ -194,6 +197,7 @@ const applySetting = (key, isActive) => {
       paintClock();
       break;
     case "lightmode":
+    case "systemTheme":
       applyTheme();
       break;
   }
@@ -201,10 +205,19 @@ const applySetting = (key, isActive) => {
 
 const applyAllSettings = () => settings.forEach((option) => applySetting(option.key, option.active));
 
+const OTHER_THEME_SETTING = { lightmode: "systemTheme", systemTheme: "lightmode" };
+
 const handleSettingChange = (key, isActive) => {
   const option = settings.find((s) => s.key === key);
   if (!option) return;
   option.active = isActive;
+
+  // light mode and the system theme contradict each other, so turning one on turns the other off
+  const other = settings.find((s) => s.key === OTHER_THEME_SETTING[key]);
+  if (isActive && other) {
+    other.active = false;
+    document.getElementById(other.key).checked = false;
+  }
 
   store.set("settingsOptions", settings);
   applySetting(key, isActive);
@@ -722,6 +735,10 @@ const initGlobalListeners = () => {
 
   resetButton.addEventListener("click", resetEverything);
 
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    if (settingOn("systemTheme")) applyTheme();
+  });
+
   favoritesList.addEventListener("wheel", (event) => {
     event.preventDefault();
     favoritesList.scrollLeft += event.deltaY;
@@ -739,7 +756,7 @@ const init = () => {
   // A new tab may hand focus to the address bar right after it loads. A plain
   // focus wins most of the time; when the page ends up without focus, one round
   // trip with ?focus takes the caret back, and that load skips this check.
-  const wantsFocus = settings.some((option) => option.key === "focusOnLoad" && option.active);
+  const wantsFocus = settingOn("focusOnLoad");
   if (wantsFocus && location.search !== "?focus") {
     setTimeout(() => {
       if (!document.hasFocus()) location.search = "?focus";

@@ -43,7 +43,7 @@ logic leaves one runnable check behind.
 | `index.html` | the page; the only entry point Pages serves |
 | `new_tab.js` / `new_tab.css` | all behaviour and all styling |
 | `lib.js` | pure helpers, the only unit-tested file |
-| `defaults.json` | shipped engines (9) and settings toggles (12) |
+| `defaults.json` | shipped engines (9) and settings toggles (13) |
 | `icons.json` | inline SVG markup for the UI icons |
 | `images/` | `logos/` engine marks, `icon32.png` favicon, `logo.png` and `preview.png` for the README |
 | `images/src/icon.svg` | the drawing behind `icon32.png` |
@@ -85,3 +85,8 @@ Pushing to `main` is the deploy - Pages serves the repository root, there is not
 - `hideTopSites` ships `active: true`, which *hides* the favourites section until the user turns it off.
 - `store.get` falls back only for missing or corrupt JSON: an empty array is a valid stored value.
 - The page cannot run from `file://`; anything that assumes a plain double-click will break.
+- The palette can only follow the system's light or dark preference (`prefers-color-scheme`, the `systemTheme`
+  setting). The browser's own theme colours are not readable from web content, so there is no equivalent of the
+  `browser.theme` API here - do not go looking for one.
+- `lightmode` and `systemTheme` contradict each other: `handleSettingChange` clears the other when one is turned on,
+  and `lightMode()` reads the settings, so the palette keeps no copy of that state.

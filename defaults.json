@@ -136,6 +136,12 @@
       "active": false,
       "key": "lightmode",
       "group": "Theme"
+    },
+    {
+      "label": "follow the system theme",
+      "active": false,
+      "key": "systemTheme",
+      "group": "Theme"
     }
   ]
 }
