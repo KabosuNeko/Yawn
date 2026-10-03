@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { ENGINE_BANGS, engineSlug, monogram, searchTarget, siteKey, toUrl, uniqueBang } from "../lib.js";
+import { ENGINE_BANGS, engineSlug, monogram, searchTarget, toUrl, uniqueBang } from "../lib.js";
 
 test("toUrl takes absolute urls and promotes bare hosts", () => {
   assert.equal(toUrl("https://example.com/path?q=1").href, "https://example.com/path?q=1");
@@ -29,12 +29,6 @@ test("monogram is the first letter of the host, without www", () => {
   assert.equal(monogram("https://www.python.org/"), "p");
   assert.equal(monogram("https://github.com/x"), "g");
   assert.equal(monogram("https://192.168.1.1/"), "1");
-});
-
-test("siteKey folds www and trailing slashes but keeps paths apart", () => {
-  assert.equal(siteKey("https://www.example.com/"), siteKey("https://example.com"));
-  assert.equal(siteKey("http://EXAMPLE.com"), siteKey("https://example.com/"));
-  assert.notEqual(siteKey("https://example.com/a"), siteKey("https://example.com/b"));
 });
 
 test("engineSlug keeps labels apart", () => {

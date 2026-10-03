@@ -136,12 +136,6 @@
       "active": false,
       "key": "lightmode",
       "group": "Theme"
-    },
-    {
-      "label": "Use browser theme",
-      "active": false,
-      "key": "useBrowserTheme",
-      "group": "Theme"
     }
   ]
 }
