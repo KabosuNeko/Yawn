@@ -27,6 +27,16 @@ Firefox nor Chromium has a setting for a custom new tab URL, so `Ctrl+T` stays t
 - 14 settings in the drawer: layout, clock, light, dark or the system theme, and a transparent background for a
   see-through browser theme.
 
+## Put it in front of you
+
+Neither Firefox nor Chromium can be told to load a URL in a new tab - that is extension territory - so `Ctrl+T` stays
+the browser's own page. The closest without one:
+
+- **Homepage**: Firefox -> Settings -> Home -> *Homepage and new windows* -> Custom URLs. Chromium -> Settings ->
+  On startup -> *Open a specific page*.
+- **Blank new tabs** instead of Firefox Home: `about:config` -> `browser.newtabpage.enabled = false`.
+- **One key away**: pin the Yawn tab and keep *Open previous windows and tabs* on; `Ctrl+1` jumps to it.
+
 ## Run it yourself
 
 ```sh
