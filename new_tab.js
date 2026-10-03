@@ -135,8 +135,9 @@ const lightMode = () => (settingOn("systemTheme") ? systemPrefersLight() : setti
 
 const applyTheme = () => {
   const colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
+  const page = settingOn("transparentBackground") ? "transparent" : colors["--background"];
 
-  for (const [name, value] of Object.entries(colors)) {
+  for (const [name, value] of Object.entries({ ...colors, "--page-background": page })) {
     document.documentElement.style.setProperty(name, value);
   }
 };
@@ -198,6 +199,7 @@ const applySetting = (key, isActive) => {
       break;
     case "lightmode":
     case "systemTheme":
+    case "transparentBackground":
       applyTheme();
       break;
   }

@@ -3,6 +3,8 @@
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 80%);
   --foreground50: hsl(0, 0%, 60%);
+  /* the page canvas on its own, so it can go transparent while panels stay opaque */
+  --page-background: var(--background);
 
   /* Derived from the foreground, so a theme that only styles the toolbar still
      gets usable hairlines and a hover surface without providing those keys. */
@@ -53,7 +55,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
+  background: var(--page-background);
   color: var(--foreground);
   font-family: var(--font-mono);
   font-size: var(--text-md);

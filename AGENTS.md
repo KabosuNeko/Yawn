@@ -43,7 +43,7 @@ logic leaves one runnable check behind.
 | `index.html` | the page; the only entry point Pages serves |
 | `new_tab.js` / `new_tab.css` | all behaviour and all styling |
 | `lib.js` | pure helpers, the only unit-tested file |
-| `defaults.json` | shipped engines (9) and settings toggles (13) |
+| `defaults.json` | shipped engines (9) and settings toggles (14) |
 | `icons.json` | inline SVG markup for the UI icons |
 | `images/` | `logos/` engine marks, `icon32.png` favicon, `logo.png` and `preview.png` for the README |
 | `images/src/icon.svg` | the drawing behind `icon32.png` |
@@ -88,5 +88,10 @@ Pushing to `main` is the deploy - Pages serves the repository root, there is not
 - The palette can only follow the system's light or dark preference (`prefers-color-scheme`, the `systemTheme`
   setting). The browser's own theme colours are not readable from web content, so there is no equivalent of the
   `browser.theme` API here - do not go looking for one.
+- `--page-background` is the page canvas alone (`--background` also paints the drawer, the toast, the engine menu
+  and the check marks). The `transparentBackground` setting points it at `transparent`; only `body` may use it.
+- A transparent page is only visible through a browser that is set up for it - Firefox needs
+  `browser.tabs.allow_transparent_browser = true` plus a compositor. Without that it falls back to the browser's
+  default canvas colour, which is why the setting ships off.
 - `lightmode` and `systemTheme` contradict each other: `handleSettingChange` clears the other when one is turned on,
   and `lightMode()` reads the settings, so the palette keeps no copy of that state.

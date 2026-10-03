@@ -24,7 +24,8 @@ Firefox nor Chromium has a setting for a custom new tab URL, so `Ctrl+T` stays t
 - `!g linux` searches through that engine once; `!g` on its own switches to it.
 - `/` focuses the search box, `alt+s` opens settings, `esc` backs out.
 - Favourites are tiles: add, edit, delete, drag to reorder (or `ctrl` + arrows).
-- 13 settings in the drawer: layout, clock, and light, dark or the system theme.
+- 14 settings in the drawer: layout, clock, light, dark or the system theme, and a transparent background for a
+  see-through browser theme.
 
 ## Run it yourself
 
