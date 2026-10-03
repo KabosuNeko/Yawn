@@ -36,6 +36,8 @@ the browser's own page. The closest without one:
   On startup -> *Open a specific page*.
 - **Blank new tabs** instead of Firefox Home: `about:config` -> `browser.newtabpage.enabled = false`.
 - **One key away**: pin the Yawn tab and keep *Open previous windows and tabs* on; `Ctrl+1` jumps to it.
+- **Ctrl+T via the compositor** (any Wayland desktop that can bind keys): bind one to
+  `firefox --new-tab https://nainne.living-the.life/Yawn/`, which hands the URL to the running Firefox.
 
 ## Run it yourself
 
