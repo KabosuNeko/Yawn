@@ -15,3 +15,6 @@ userChrome.css
 
 # tool droppings
 *.har
+
+# web-ext sign bookkeeping
+.amo-upload-uuid
