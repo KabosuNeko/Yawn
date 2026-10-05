@@ -1,6 +1,6 @@
 import { ENGINE_BANGS, engineSlug, monogram, searchTarget, siteKey, toUrl, uniqueBang } from "./lib.js";
 
-const api = globalThis.browser ?? globalThis.chrome ?? {};
+const api = globalThis.browser ?? globalThis.chrome;
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
 const loadJson = async (path) => (await fetch(path)).json();
@@ -155,8 +155,7 @@ const pickThemeColors = (themeColors) =>
 const applyTheme = async () => {
   let colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
 
-  // ponytail: chrome has no theme api, the browser theme is firefox only
-  if (settingOn("useBrowserTheme") && api.theme) {
+  if (settingOn("useBrowserTheme")) {
     const theme = await api.theme.getCurrent();
     colors = { ...colors, ...pickThemeColors(theme?.colors) };
   }
@@ -405,10 +404,7 @@ const renderSettings = () => {
   enginesContainer.replaceChildren();
 
   let group = null;
-  const options = settings.filter((option) => option.key !== "useBrowserTheme" || api.theme);
-  if (api.permissions) options.push(HISTORY_OPTION);
-
-  for (const option of options) {
+  for (const option of [...settings, HISTORY_OPTION]) {
     if (option.group && option.group !== group) {
       group = option.group;
       settingsContainer.append(el("li", { className: "group", textContent: group }));
@@ -500,7 +496,6 @@ const hasHistoryPermission = async () => {
 };
 
 const getSuggestions = async (query) => {
-  if (!api.topSites) return [];
   const [topSites, historyItems] = await Promise.all([
     api.topSites.get(),
     (await hasHistoryPermission()) ? api.history.search({ text: query, maxResults: 100 }) : [],
@@ -782,7 +777,7 @@ const initFavoriteOrdering = () => {
 };
 
 const initFavorites = async () => {
-  if (!favorites.length && api.topSites) {
+  if (!favorites.length) {
     const browserSites = await api.topSites.get().catch(() => []);
     favorites = browserSites.slice(0, MAX_FAVORITES).map((site) => ({
       id: newFavId(),
@@ -913,8 +908,8 @@ const initGlobalListeners = () => {
   });
 
   // the browser's own add-ons manager can grant or revoke the optional permission
-  api.permissions?.onAdded?.addListener(syncHistoryOption);
-  api.permissions?.onRemoved?.addListener(syncHistoryOption);
+  api.permissions.onAdded.addListener(syncHistoryOption);
+  api.permissions.onRemoved.addListener(syncHistoryOption);
 
   engineAddButton.addEventListener("click", addCustomEngine);
   [engineLabelInput, engineUrlInput].forEach((input) =>
