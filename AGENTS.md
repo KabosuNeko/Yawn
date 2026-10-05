@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-Yawn is a new tab page served as static files: `index.html` plus one stylesheet, one ES module, two JSON data files
-and the images they use. There is no extension, no build step, no dependency and no backend. GitHub Pages serves
-the repository root, so `main` is both the source and the deployed site.
+Yawn is a new tab page served two ways from one codebase: a static page on GitHub Pages, and a Firefox extension
+(`manifest.json`, `chrome_url_overrides.newtab`) whose new tab page is that same `index.html`. There is no build step
+and no second copy - the page detects at runtime whether it has extension APIs and drops the features it cannot have.
 
-It is shaped this way because neither Firefox nor Chromium has a setting for a custom new tab URL: without an
+It is shaped this way because neither Firefox nor Chromium has a setting for a custom new tab URL: without the
 extension the page can only be a bookmark, a pinned tab, or the homepage.
 
 **Invariant: no fingerprinting surface.** No requests except its own files, no telemetry, no host permissions, no
@@ -33,31 +33,44 @@ logic leaves one runnable check behind.
 - An event mutates module state, persists it, and re-renders the containing element with `replaceChildren`.
 - Search: a leading `!bang` token goes through `toUrl()` (navigate) or `searchTarget()` (search); a lone bang
   switches the preferred engine.
-- Nothing may call `browser.*` or `chrome.*`: the page is unprivileged, and such a call is the one mistake that
-  breaks it everywhere. Same for new `fetch` calls or remote assets.
+- `api` is `globalThis.browser ?? globalThis.chrome ?? {}` and the stub is load-bearing: the same page is published
+  as a plain web page, where every `api.*` is undefined. Guard every use (`api.topSites ? ... : ...`,
+  `if (!api.permissions) return false`, `api.permissions?.onAdded?.addListener`, `api.theme && ...`) and gate the
+  drawer rows that need an API on its presence, so the hosted page never shows a dead control.
+- Extension-only features, all of them guarded: suggestions from `api.topSites` plus `api.history`, the optional
+  history permission row, and the browser-theme colours (`api.theme.getCurrent()`).
+- Nothing may call `browser.*` or `chrome.*` unguarded: an unguarded call is the one mistake that breaks the hosted
+  page everywhere. Same for new `fetch` calls or remote assets.
 
 ## Key Directories
 
 | Path | Purpose |
 |---|---|
-| `index.html` | the page; the only entry point Pages serves |
+| `index.html` | the page; the extension's new tab and the only entry point Pages serves |
 | `new_tab.js` / `new_tab.css` | all behaviour and all styling |
 | `lib.js` | pure helpers, the only unit-tested file |
-| `defaults.json` | shipped engines (9) and settings toggles (14) |
+| `defaults.json` | shipped engines (9) and settings toggles (15; 14 without the extension) |
 | `icons.json` | inline SVG markup for the UI icons |
-| `images/` | `logos/` engine marks, `icon32.png` favicon, `logo.png` and `preview.png` for the README |
+| `manifest.json` | the Firefox extension: newtab override, `topSites`, optional `history` |
+| `web-ext-config.mjs` | what the `.xpi` must not contain (test, docs, image sources, README assets) |
+| `images/` | `logos/` engine marks, the four `icon*.png` sizes, `logo.png` and `preview.png` for the README |
 | `images/src/icon.svg` | the drawing behind `icon32.png` |
 | `test/lib.test.js` | `node:test` suite for `lib.js` |
 
 ## Development
 
 ```bash
-python3 -m http.server 8080   # then open http://127.0.0.1:8080/
-node --test test/             # 7 tests over lib.js
+python3 -m http.server 8080   # the hosted page: open http://127.0.0.1:8080/
+node --test test/             # 8 tests over lib.js
+npx web-ext lint              # must stay at 0 errors
+npx web-ext sign --api-key ... --api-secret ... --channel unlisted   # signed .xpi for release Firefox
 ```
 
 The page must be served: it fetches the two JSON files and imports `lib.js` as a module, and `file://` blocks both.
 Pushing to `main` is the deploy - Pages serves the repository root, there is nothing to build or publish by hand.
+To try the extension without signing, load `manifest.json` through `about:debugging#/runtime/this-firefox`, or use
+Nightly/Developer Edition/ESR with `xpinstall.signatures.required = false` and the folder in
+`<profile>/extensions/yawn@extension.local/`.
 
 ## Code Conventions & Common Patterns
 

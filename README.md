@@ -15,6 +15,21 @@ framework, no backend, no build step.
 
 <img src="images/preview.png" alt="Yawn" />
 
+## Install
+
+**As a page** - it is published at <https://nainne.living-the.life/Yawn/>. Open it and bookmark it, set it as your
+homepage, or pin the tab.
+
+**As a Firefox extension** - clone this repo and load it, which makes Yawn the new tab page itself:
+
+```sh
+# for the session: about:debugging#/runtime/this-firefox -> Load Temporary Add-on -> manifest.json
+npx web-ext sign --api-key ... --api-secret ... --channel unlisted   # signed .xpi, permanent
+```
+
+On Nightly, Developer Edition or ESR it also installs unsigned: set `xpinstall.signatures.required = false` and copy
+the folder to `<profile>/extensions/yawn@extension.local/`. Chromium has no signed install here, so it uses the page.
+
 ## Use
 
 Open <https://nainne.living-the.life/Yawn/> and bookmark it, set it as your homepage, or pin the tab. Neither
@@ -24,13 +39,15 @@ Firefox nor Chromium has a setting for a custom new tab URL, so `Ctrl+T` stays t
 - `!g linux` searches through that engine once; `!g` on its own switches to it.
 - `/` focuses the search box, `alt+s` opens settings, `esc` backs out.
 - Favourites are tiles: add, edit, delete, drag to reorder (or `ctrl` + arrows).
-- 14 settings in the drawer: layout, clock, light, dark or the system theme, and a transparent background for a
-  see-through browser theme.
+- 14 settings in the drawer as a page; with the extension there are 16, the extra two being the Firefox theme colours
+  and the optional history permission.
+- With the extension, top sites also seed the favourites, and typing suggests sites from your top sites and - only if
+  you grant the permission - your history.
 
-## Put it in front of you
+## Without the extension
 
-Neither Firefox nor Chromium can be told to load a URL in a new tab - that is extension territory - so `Ctrl+T` stays
-the browser's own page. The closest without one:
+Neither Firefox nor Chromium can be told to load a URL in a new tab without an extension, so `Ctrl+T` stays the
+browser's own page unless you install the Firefox one above. The closest without it:
 
 - **Homepage**: Firefox -> Settings -> Home -> *Homepage and new windows* -> Custom URLs. Chromium -> Settings ->
   On startup -> *Open a specific page*.
