@@ -29,6 +29,10 @@ npx web-ext sign --api-key ... --api-secret ... --channel unlisted
 Unsigned works on Nightly, Developer Edition and ESR: set `xpinstall.signatures.required = false` and copy the folder
 to `<profile>/extensions/yawn@extension.local/`.
 
+Installing it also sets the homepage to the page itself, so the startup tab - which loads the homepage, not
+`about:newtab` - is Yawn too. Firefox lists that under Settings, Home as an extension-controlled homepage and you can
+take it back there.
+
 ## Use
 
 - Type and press `Enter` to search with the preferred engine.

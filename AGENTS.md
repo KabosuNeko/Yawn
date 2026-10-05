@@ -4,6 +4,9 @@
 
 Yawn is a Firefox extension that replaces the new tab page: `manifest.json` maps `chrome_url_overrides.newtab` to
 `index.html`, which is the whole page - one stylesheet and one ES module, no bundler, no framework, no build step.
+It also declares `chrome_settings_overrides.homepage`, because the startup tab loads the *homepage* (`about:home` by
+default, `browser.startup.page = 1`) and not `about:newtab`, and `about:home` is a different page from the one the
+newtab override replaces.
 
 It has to be an extension because Firefox has no setting for a custom new tab URL: `browser.newtab.url` was removed
 in Firefox 41, the default prefs hold no such URL, and the `general.config.filename` AutoConfig sandbox can only set
@@ -48,7 +51,7 @@ logic leaves one runnable check behind.
 | `lib.js` | pure helpers, the only unit-tested file |
 | `defaults.json` | shipped engines (9) and settings toggles (15, plus the history row the drawer synthesises) |
 | `icons.json` | inline SVG markup for the UI icons |
-| `manifest.json` | the Firefox extension: newtab override, `topSites`, optional `history` |
+| `manifest.json` | the Firefox extension: newtab and homepage overrides, `topSites`, optional `history` |
 | `web-ext-config.mjs` | what the `.xpi` must not contain (test, docs, image sources, README assets) |
 | `images/` | `logos/` engine marks, the four `icon*.png` sizes, `logo.png` and `preview.png` for the README |
 | `images/src/icon.svg` | the drawing behind `icon32.png` |
