@@ -277,8 +277,8 @@ ul {
 
 #suggestions-list {
   position: absolute;
+  top: calc(100% + var(--sp-1));
   inset-inline: 0;
-  top: calc(var(--bar) + var(--sp-3));
   padding: var(--sp-1);
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
@@ -387,6 +387,7 @@ img.suggestion-mark {
 #favorites {
   display: flex;
   align-items: center;
+  justify-content: safe center;
   gap: var(--sp-2);
   min-width: 0;
   overflow-x: auto;
@@ -421,6 +422,12 @@ img.suggestion-mark {
 
 .add-tile {
   border-style: dashed;
+}
+
+.tile-link img {
+  width: 1.125rem;
+  height: 1.125rem;
+  object-fit: contain;
 }
 
 .tile-link:hover,

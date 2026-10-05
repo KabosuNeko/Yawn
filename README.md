@@ -40,12 +40,13 @@ take it back there.
 - `/` focuses the search box, `alt+s` opens settings, `esc` backs out.
 - Favourites are tiles: add, edit, delete, drag to reorder (or `ctrl` + arrows). Firefox's top sites seed them once.
 - Typing suggests sites from your top sites, and from your history once you grant that permission.
-- 16 settings: layout, clock, light, dark, following the system, following the Firefox theme, transparent background.
+- 15 settings: layout, clock, light mode, following the browser theme, transparent background.
 
 ## Privacy
 
-No requests beyond its own files, no telemetry, no remote fonts and no remote favicons - a tile shows a letter
-instead. The optional history permission is only read for those suggestions, and settings and favourites live in
+No requests beyond its own files, no telemetry, no remote fonts and no remote favicons - a tile shows the favicon
+Firefox already has for the site (`data:` urls out of `topSites`, nothing is fetched) and a letter when it has none.
+The optional history permission is only read for those suggestions, and settings and favourites live in
 `localStorage` and nowhere else.
 
 ## Development

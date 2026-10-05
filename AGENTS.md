@@ -13,7 +13,8 @@ in Firefox 41, the default prefs hold no such URL, and the `general.config.filen
 prefs. `chrome_url_overrides` is the only lever.
 
 **Invariant: no fingerprinting surface.** No requests except its own files, no telemetry, no host permissions, no
-remote fonts and no remote favicons - a tile shows a letter instead. Keep it that way.
+remote fonts and no remote favicons - a tile shows the `data:` favicon Firefox already has, or a letter. Keep it
+that way.
 
 ## House Rule: ponytail
 
@@ -49,7 +50,7 @@ logic leaves one runnable check behind.
 | `index.html` | the page; the extension's new tab |
 | `new_tab.js` / `new_tab.css` | all behaviour and all styling |
 | `lib.js` | pure helpers, the only unit-tested file |
-| `defaults.json` | shipped engines (9) and settings toggles (15, plus the history row the drawer synthesises) |
+| `defaults.json` | shipped engines (9) and settings toggles (14, plus the history row the drawer synthesises) |
 | `icons.json` | inline SVG markup for the UI icons |
 | `manifest.json` | the Firefox extension: newtab and homepage overrides, `topSites`, optional `history` |
 | `web-ext-config.mjs` | what the `.xpi` must not contain (test, docs, image sources, README assets) |
@@ -78,8 +79,10 @@ The page only runs as an extension page, so develop it with `web-ext run` or wit
 - No `console.*`; user feedback goes through `showToast(message, autoHide)`, destructive actions through a
   non-auto-hiding confirm. Swallow-and-fallback at the boundary (`store.get` parse guard).
 - DOM contract: ids for singleton structure, kebab-case classes for reusable parts, `data-*` as the JS link
-  (`data-icon`, `data-id`, `data-key`, `data-action`). State classes: `hidden`, `adding`, `minimal`,
-  `no-separator`, `dragging`, `drop-target`, `prevent-ui-interactivity`. Keep the `aria-*` renderers in sync.
+  (`data-icon`, `data-id`, `data-key`, `data-action`). `#suggestions-list` is absolutely positioned, so it belongs
+  inside `#bar` (its containing block) - as a sibling of the bar it lands on top of it. State classes: `hidden`,
+  `adding`, `minimal`, `no-separator`, `dragging`, `drop-target`, `prevent-ui-interactivity`. Keep the `aria-*`
+  renderers in sync.
 - Theming is CSS custom properties written on `document.documentElement.style`; `--hairline` and `--surface` are
   derived in CSS, so a palette only needs `--background`, `--foreground` and `--foreground50`.
 
@@ -97,9 +100,10 @@ The page only runs as an extension page, so develop it with `web-ext run` or wit
 - `hideTopSites` ships `active: true`, which *hides* the favourites section until the user turns it off.
 - `store.get` falls back only for missing or corrupt JSON: an empty array is a valid stored value.
 - The page cannot run from `file://`; anything that assumes a plain double-click will break.
-- The palette can only follow the system's light or dark preference (`prefers-color-scheme`, the `systemTheme`
-  setting). The browser's own theme colours are not readable from web content, so there is no equivalent of the
-  `browser.theme` API here - do not go looking for one.
+- Light or dark comes from `prefers-color-scheme`, the only palette signal web content gets; the browser's own theme
+  colours are not readable from a plain page - `api.theme.getCurrent()` is the extension API that reads them, which is
+  what `useBrowserTheme` calls. It is one setting on purpose: it follows the system preference *and* overlays whatever
+  colours the theme provides, so a theme that styles only the toolbar leaves the built-in palette in place.
 - The `--page-*` variables are what the page draws straight on its own canvas: `--page-background` (only `body` uses
   it) and the two lines `--page-hairline` / `--page-focus` (the bar frame and the favourites separator). The
   `transparentBackground` setting blanks all three. `--background` stays opaque on purpose - it also paints the
@@ -107,5 +111,5 @@ The page only runs as an extension page, so develop it with `web-ext run` or wit
 - A transparent page is only visible through a browser that is set up for it - Firefox needs
   `browser.tabs.allow_transparent_browser = true` plus a compositor. Without that it falls back to the browser's
   default canvas colour, which is why the setting ships off.
-- `lightmode` and `systemTheme` contradict each other: `handleSettingChange` clears the other when one is turned on,
-  and `lightMode()` reads the settings, so the palette keeps no copy of that state.
+- `lightmode` and `useBrowserTheme` contradict each other: `handleSettingChange` clears the other when one is turned
+  on, and `lightMode()` reads the settings, so the palette keeps no copy of that state.

@@ -131,9 +131,11 @@ const DARK_COLORS = {
   "--foreground50": "hsl(0, 0%, 60%)",
 };
 
-/* A plain page cannot read the browser's theme colours, only whether the system asks for light or dark. */
+/* A plain page cannot read the browser's theme colours, only whether the system asks for light or dark.
+   Following the browser theme therefore starts from the system preference and then lets the theme's own
+   colours override what it does provide. */
 const systemPrefersLight = () => matchMedia("(prefers-color-scheme: light)").matches;
-const lightMode = () => (settingOn("systemTheme") ? systemPrefersLight() : settingOn("lightmode"));
+const lightMode = () => (settingOn("useBrowserTheme") ? systemPrefersLight() : settingOn("lightmode"));
 
 /* A theme may only style the toolbar: every role walks a chain of keys and
    anything it does not provide keeps the built in palette value. Hairlines and
@@ -228,7 +230,6 @@ const applySetting = (key, isActive) => {
       paintClock();
       break;
     case "lightmode":
-    case "systemTheme":
     case "useBrowserTheme":
     case "transparentBackground":
       applyTheme();
@@ -238,14 +239,14 @@ const applySetting = (key, isActive) => {
 
 const applyAllSettings = () => settings.forEach((option) => applySetting(option.key, option.active));
 
-const THEME_SETTINGS = ["lightmode", "systemTheme", "useBrowserTheme"];
+const THEME_SETTINGS = ["lightmode", "useBrowserTheme"];
 
 const handleSettingChange = (key, isActive) => {
   const option = settings.find((s) => s.key === key);
   if (!option) return;
   option.active = isActive;
 
-  // the three theme choices contradict each other, so turning one on turns the others off
+  // the two theme choices contradict each other, so turning one on turns the other off
   if (isActive && THEME_SETTINGS.includes(key)) {
     for (const otherKey of THEME_SETTINGS) {
       const other = otherKey === key ? null : settings.find((s) => s.key === otherKey);
@@ -602,9 +603,11 @@ const renderFavorites = () => {
       className: "tile-link",
       href: site.url,
       title: site.title,
-      textContent: monogram(site.url),
       draggable: false,
     });
+    // the browser hands favicons over as data: urls, never a url we would have to fetch
+    if (site.favicon?.startsWith("data:")) link.append(el("img", { src: site.favicon, alt: "" }));
+    else link.textContent = monogram(site.url);
     link.setAttribute("aria-label", site.title);
 
     const actions = el("div", { className: "tile-actions" });
@@ -776,6 +779,9 @@ const initFavoriteOrdering = () => {
   });
 };
 
+// the browser hands favicons over as data: urls, so a tile never needs a request
+const localFavicon = (value) => (value?.startsWith("data:") ? value : null);
+
 const initFavorites = async () => {
   if (!favorites.length) {
     const browserSites = await api.topSites.get().catch(() => []);
@@ -783,8 +789,21 @@ const initFavorites = async () => {
       id: newFavId(),
       title: site.title || site.url,
       url: site.url,
+      ...(localFavicon(site.favicon) ? { favicon: site.favicon } : {}),
     }));
     store.set(FAVORITES_KEY, favorites);
+  } else if (favorites.some((site) => !site.favicon)) {
+    // favourites saved before tiles carried icons: take the ones the browser still has, leave the rest
+    const browserSites = await api.topSites.get().catch(() => []);
+    const known = new Map(browserSites.map((site) => [site.url, localFavicon(site.favicon)]));
+    let gained = false;
+    favorites = favorites.map((site) => {
+      const favicon = site.favicon ? null : known.get(site.url);
+      if (!favicon) return site;
+      gained = true;
+      return { ...site, favicon };
+    });
+    if (gained) store.set(FAVORITES_KEY, favorites);
   }
   renderFavorites();
 
@@ -925,7 +944,7 @@ const initGlobalListeners = () => {
   });
 
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
-    if (settingOn("systemTheme")) applyTheme();
+    if (settingOn("useBrowserTheme")) applyTheme();
   });
 
   favoritesList.addEventListener("wheel", (event) => {

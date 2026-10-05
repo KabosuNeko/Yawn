@@ -138,13 +138,7 @@
       "group": "Theme"
     },
     {
-      "label": "follow the system theme",
-      "active": false,
-      "key": "systemTheme",
-      "group": "Theme"
-    },
-    {
-      "label": "Use browser theme",
+      "label": "follow the browser theme",
       "active": false,
       "key": "useBrowserTheme",
       "group": "Theme"
