@@ -1,0 +1,26 @@
+{
+  "name": "Yawn",
+  "version": "1.0",
+  "manifest_version": 3,
+  "description": "A minimal new tab page: engines, bangs, favourites, a clock.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "yawn@extension.local",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": ["topSites"],
+  "optional_permissions": ["history"],
+  "icons": {
+    "16": "images/icon16.png",
+    "32": "images/icon32.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}
