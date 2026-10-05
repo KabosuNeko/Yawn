@@ -61,15 +61,17 @@ logic leaves one runnable check behind.
 ## Development
 
 ```bash
-npx web-ext run              # loads the add-on into a Firefox and reloads it on changes
+# load the add-on: about:debugging#/runtime/this-firefox -> Load Temporary Add-on -> manifest.json
+# (web-ext run cannot: it drives Firefox over CDP and Firefox 141 removed CDP)
 node --test test/            # 8 tests over lib.js
 npx web-ext lint             # must stay at 0 errors
 npx web-ext sign --api-key ... --api-secret ... --channel unlisted   # signed .xpi for release Firefox
 ```
 
-The page only runs as an extension page, so develop it with `web-ext run` or with `manifest.json` loaded through
+The page only runs as an extension page, so develop it with `manifest.json` loaded through
 `about:debugging#/runtime/this-firefox`. Unsigned installs also work on Nightly, Developer Edition and ESR:
-`xpinstall.signatures.required = false` plus the folder in `<profile>/extensions/yawn@extension.local/`.
+`xpinstall.signatures.required = false` plus the folder in `<profile>/extensions/yawn@extension.local/` - on a
+release build that pref does nothing and the unsigned add-on is deleted at startup, so release needs a signature.
 
 ## Code Conventions & Common Patterns
 
@@ -90,7 +92,7 @@ The page only runs as an extension page, so develop it with `web-ext run` or wit
 
 - `node:test` + `node:assert/strict` in `test/lib.test.js` covers the pure helpers (`toUrl`, `searchTarget`,
   `monogram`, `engineSlug`, `uniqueBang`). There is no coverage threshold and no CI.
-- The page itself has no automated test: load the add-on (`web-ext run` or `about:debugging`) and exercise the changed
+- The page itself has no automated test: load the add-on (`about:debugging`) and exercise the changed
   path - search and `!bang`, engine switching, suggestions with and without the history permission, favourites
   add/edit/delete/reorder, each setting, reset, `?focus`. Defaults to remember: dark theme, favourites capped at 8,
   and `hideTopSites` ships on, so the favourites section starts hidden.

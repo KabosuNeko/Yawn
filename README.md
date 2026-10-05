@@ -52,7 +52,8 @@ The optional history permission is only read for those suggestions, and settings
 ## Development
 
 ```sh
-npx web-ext run      # loads the add-on into a Firefox and reloads it on changes
+# load it: about:debugging#/runtime/this-firefox -> Load Temporary Add-on -> manifest.json
+# web-ext run cannot do that anymore: it drives Firefox over CDP, which Firefox 141 dropped
 node --test test/    # unit tests for lib.js
 npx web-ext lint     # must stay at 0 errors
 ```
