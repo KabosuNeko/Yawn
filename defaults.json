@@ -144,6 +144,12 @@
       "group": "Theme"
     },
     {
+      "label": "Use browser theme",
+      "active": false,
+      "key": "useBrowserTheme",
+      "group": "Theme"
+    },
+    {
       "label": "transparent background",
       "active": false,
       "key": "transparentBackground",

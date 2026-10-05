@@ -1,5 +1,6 @@
-import { ENGINE_BANGS, engineSlug, monogram, searchTarget, toUrl, uniqueBang } from "./lib.js";
+import { ENGINE_BANGS, engineSlug, monogram, searchTarget, siteKey, toUrl, uniqueBang } from "./lib.js";
 
+const api = globalThis.browser ?? globalThis.chrome ?? {};
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
 const loadJson = async (path) => (await fetch(path)).json();
@@ -24,6 +25,7 @@ const searchBtn = $("#search-btn");
 const engineBtn = $("#engine-btn");
 const engineLabel = $("#engine-label");
 const engineMenu = $("#engine-menu");
+const suggestionsList = $("#suggestions-list");
 const settingsPanel = $("#settings-panel");
 const settingsBtn = $("#settings-btn");
 const toast = $("#toast");
@@ -133,8 +135,32 @@ const DARK_COLORS = {
 const systemPrefersLight = () => matchMedia("(prefers-color-scheme: light)").matches;
 const lightMode = () => (settingOn("systemTheme") ? systemPrefersLight() : settingOn("lightmode"));
 
-const applyTheme = () => {
-  const colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
+/* A theme may only style the toolbar: every role walks a chain of keys and
+   anything it does not provide keeps the built in palette value. Hairlines and
+   the hover surface are derived in CSS, so themes never need to supply them. */
+const THEME_ROLE_KEYS = {
+  "--background": ["ntp_background", "toolbar", "frame"],
+  "--foreground": ["ntp_text", "toolbar_text", "tab_text"],
+  "--foreground50": ["icons"],
+};
+
+const pickThemeColors = (themeColors) =>
+  Object.fromEntries(
+    Object.entries(THEME_ROLE_KEYS).flatMap(([name, keys]) => {
+      const value = keys.map((key) => themeColors?.[key]).find(Boolean);
+      return value ? [[name, value]] : [];
+    }),
+  );
+
+const applyTheme = async () => {
+  let colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
+
+  // ponytail: chrome has no theme api, the browser theme is firefox only
+  if (settingOn("useBrowserTheme") && api.theme) {
+    const theme = await api.theme.getCurrent();
+    colors = { ...colors, ...pickThemeColors(theme?.colors) };
+  }
+
   const hidden = settingOn("transparentBackground");
   const page = {
     "--page-background": hidden ? "transparent" : colors["--background"],
@@ -204,6 +230,7 @@ const applySetting = (key, isActive) => {
       break;
     case "lightmode":
     case "systemTheme":
+    case "useBrowserTheme":
     case "transparentBackground":
       applyTheme();
       break;
@@ -212,22 +239,58 @@ const applySetting = (key, isActive) => {
 
 const applyAllSettings = () => settings.forEach((option) => applySetting(option.key, option.active));
 
-const OTHER_THEME_SETTING = { lightmode: "systemTheme", systemTheme: "lightmode" };
+const THEME_SETTINGS = ["lightmode", "systemTheme", "useBrowserTheme"];
 
 const handleSettingChange = (key, isActive) => {
   const option = settings.find((s) => s.key === key);
   if (!option) return;
   option.active = isActive;
 
-  // light mode and the system theme contradict each other, so turning one on turns the other off
-  const other = settings.find((s) => s.key === OTHER_THEME_SETTING[key]);
-  if (isActive && other) {
-    other.active = false;
-    document.getElementById(other.key).checked = false;
+  // the three theme choices contradict each other, so turning one on turns the others off
+  if (isActive && THEME_SETTINGS.includes(key)) {
+    for (const otherKey of THEME_SETTINGS) {
+      const other = otherKey === key ? null : settings.find((s) => s.key === otherKey);
+      if (!other) continue;
+      other.active = false;
+      const input = document.getElementById(otherKey);
+      if (input) input.checked = false;
+    }
   }
 
   store.set("settingsOptions", settings);
   applySetting(key, isActive);
+};
+
+const HISTORY_PERMISSION = "history";
+const HISTORY_OPTION = {
+  key: "historyPermission",
+  label: "Suggestions from browsing history",
+  group: "History",
+};
+
+const syncHistoryOption = async () => {
+  const input = document.getElementById(HISTORY_OPTION.key);
+  if (input) input.checked = await hasHistoryPermission();
+};
+
+const toggleHistoryPermission = async (input, wanted) => {
+  try {
+    const changed = wanted
+      ? await api.permissions.request({ permissions: [HISTORY_PERMISSION] })
+      : await api.permissions.remove({ permissions: [HISTORY_PERMISSION] });
+    input.checked = wanted && changed;
+    showToast(
+      wanted
+        ? changed
+          ? "Suggestions will use your browsing history"
+          : "Permission denied"
+        : "Suggestions will use top sites only",
+    );
+  } catch {
+    input.checked = false;
+    showToast("Could not change the history permission");
+  }
+  if (input.checked) renderSuggestions(searchInput.value.trim());
 };
 
 /* "!g linux" searches Google for that one query, "!g" alone switches the engine.
@@ -342,7 +405,10 @@ const renderSettings = () => {
   enginesContainer.replaceChildren();
 
   let group = null;
-  for (const option of settings) {
+  const options = settings.filter((option) => option.key !== "useBrowserTheme" || api.theme);
+  if (api.permissions) options.push(HISTORY_OPTION);
+
+  for (const option of options) {
     if (option.group && option.group !== group) {
       group = option.group;
       settingsContainer.append(el("li", { className: "group", textContent: group }));
@@ -354,6 +420,7 @@ const renderSettings = () => {
   engines.forEach((option) => createOption(option, enginesContainer, option.custom ? removeCustomEngine : null));
 
   settingsPanel.scrollTop = scrollTop;
+  syncHistoryOption();
   renderIcons();
 };
 
@@ -375,6 +442,7 @@ const performSearch = (query) => {
   if (wanted && !tail.length) {
     selectEngine(wanted.key);
     searchInput.value = "";
+    suggestionsList.replaceChildren();
     showToast(`Search engine: ${wanted.label}`);
     return;
   }
@@ -420,7 +488,101 @@ const handleEngineSettingChange = (key, isActive) => {
   renderEngines();
 };
 
+/* history is an optional permission, granted from the settings drawer, so every
+   reader of it has to cope with it being absent */
+const hasHistoryPermission = async () => {
+  if (!api.history || !api.permissions) return false;
+  try {
+    return await api.permissions.contains({ permissions: [HISTORY_PERMISSION] });
+  } catch {
+    return false;
+  }
+};
+
+const getSuggestions = async (query) => {
+  if (!api.topSites) return [];
+  const [topSites, historyItems] = await Promise.all([
+    api.topSites.get(),
+    (await hasHistoryPermission()) ? api.history.search({ text: query, maxResults: 100 }) : [],
+  ]);
+
+  const needle = query.toLowerCase();
+  const matches = (site) =>
+    site.title && (site.title.toLowerCase().includes(needle) || site.url.toLowerCase().includes(needle));
+
+  // the same site can arrive as both a top site and a history entry, sometimes
+  // with a www prefix or a trailing slash, so dedupe on the normalised url
+  const seen = new Set();
+  return [...topSites.filter(matches), ...historyItems]
+    .filter((site) => {
+      if (!site.url) return false;
+      const key = siteKey(site.url);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 6);
+};
+
+const buildSuggestionItem = (entry) => {
+  const link = el("a", { className: "suggestion-link", href: entry.url });
+  // firefox hands top sites a data url with the real icon; anything else, and
+  // anything remote on other browsers, falls back to the site's letter
+  const mark = entry.favicon?.startsWith("data:")
+    ? el("img", { className: "suggestion-mark", src: entry.favicon, alt: "" })
+    : el("span", { className: "suggestion-mark", textContent: monogram(entry.url) });
+  link.append(
+    mark,
+    el("span", { textContent: entry.title || entry.url }),
+    el("span", { textContent: "\u2192" }),
+    svgIcon(icons.loading.content, true),
+  );
+
+  const row = document.createElement("li");
+  row.append(link);
+  return row;
+};
+
+const renderSuggestions = async (query) => {
+  if (!query) return suggestionsList.replaceChildren();
+
+  // null means the browser refused the history/topSites call
+  const items = await getSuggestions(query).catch(() => null);
+  if (query !== searchInput.value.trim()) return; // a newer keystroke already rendered
+
+  if (!items) {
+    const link = el("a", { className: "suggestion-link" });
+    link.append(el("span", { textContent: "We have issue getting the suggestion from your browser" }));
+    const row = document.createElement("li");
+    row.append(link);
+    return suggestionsList.replaceChildren(row);
+  }
+
+  suggestionsList.replaceChildren(...items.map(buildSuggestionItem));
+};
+
+const initSuggestions = () =>
+  searchInput.addEventListener("input", () => {
+    closeEngineMenu();
+    renderSuggestions(searchInput.value.trim());
+  });
+
+const navigateSuggestions = (key) => {
+  const items = [...suggestionsList.querySelectorAll("a")];
+  const index = items.indexOf(document.activeElement) + (key === "ArrowDown" ? 1 : -1);
+  if (items[index]) items[index].focus();
+  else focusInputAtEnd();
+};
+
+const focusInputAtEnd = () => {
+  searchInput.focus();
+  requestAnimationFrame(() =>
+    searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length),
+  );
+};
+
 const FAVORITES_KEY = "topSites";
+const MAX_FAVORITES = 8;
 const ADD_PROMPT = { value: "", placeholder: "Add new favourite website link", action: "addNewUrl" };
 
 let favorites = store.get(FAVORITES_KEY, []);
@@ -619,7 +781,16 @@ const initFavoriteOrdering = () => {
   });
 };
 
-const initFavorites = () => {
+const initFavorites = async () => {
+  if (!favorites.length && api.topSites) {
+    const browserSites = await api.topSites.get().catch(() => []);
+    favorites = browserSites.slice(0, MAX_FAVORITES).map((site) => ({
+      id: newFavId(),
+      title: site.title || site.url,
+      url: site.url,
+    }));
+    store.set(FAVORITES_KEY, favorites);
+  }
   renderFavorites();
 
   favoritesList.addEventListener("click", (event) => {
@@ -649,6 +820,7 @@ const initGlobalListeners = () => {
       if (isAdding()) return closeAddForm();
       if (searchInput.value) {
         searchInput.value = "";
+        suggestionsList.replaceChildren();
         return;
       }
       closeSettingsPanel();
@@ -664,10 +836,16 @@ const initGlobalListeners = () => {
     const typing = document.activeElement?.matches?.(
       'input:not([type="checkbox"]), textarea, [contenteditable]',
     );
+    const typingOutsideSearch = typing && document.activeElement !== searchInput;
 
     if (event.key === "/" && !typing) {
       event.preventDefault();
       searchInput.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (!inEngineMenu && !typingOutsideSearch) navigateSuggestions(event.key);
       return;
     }
 
@@ -726,12 +904,17 @@ const initGlobalListeners = () => {
 
   $("#settings-options").addEventListener("change", (event) => {
     if (event.target.tagName !== "INPUT") return;
+    if (event.target.id === HISTORY_OPTION.key) return void toggleHistoryPermission(event.target, event.target.checked);
     handleSettingChange(event.target.id, event.target.checked);
   });
 
   $("#settings-search-engines").addEventListener("change", (event) => {
     if (event.target.tagName === "INPUT") handleEngineSettingChange(event.target.id, event.target.checked);
   });
+
+  // the browser's own add-ons manager can grant or revoke the optional permission
+  api.permissions?.onAdded?.addListener(syncHistoryOption);
+  api.permissions?.onRemoved?.addListener(syncHistoryOption);
 
   engineAddButton.addEventListener("click", addCustomEngine);
   [engineLabelInput, engineUrlInput].forEach((input) =>
@@ -741,6 +924,10 @@ const initGlobalListeners = () => {
   );
 
   resetButton.addEventListener("click", resetEverything);
+
+  suggestionsList.addEventListener("click", (event) => {
+    event.target.closest(".suggestion-link")?.classList.add("loading");
+  });
 
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
     if (settingOn("systemTheme")) applyTheme();
@@ -752,13 +939,14 @@ const initGlobalListeners = () => {
   });
 };
 
-const init = () => {
+const init = async () => {
   renderEngines();
   renderSettings();
   applyAllSettings();
   startClock();
   initGlobalListeners();
-  initFavorites();
+  initSuggestions();
+  await initFavorites();
 
   // A new tab may hand focus to the address bar right after it loads. A plain
   // focus wins most of the time; when the page ends up without focus, one round

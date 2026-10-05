@@ -38,11 +38,15 @@ export const searchTarget = (engine, term) => {
   return engine.url.includes("%s") ? engine.url.replace("%s", () => encoded) : engine.url + encoded;
 };
 
-/* the letter a favourite tile shows when it has no icon */
+/* the letter a tile or suggestion row shows when it has no icon */
 export const monogram = (url) => {
   const host = new URL(url).hostname.replace(/^www\./, "");
   return (host.match(/[a-z0-9]/i) ?? ["?"])[0].toLowerCase();
 };
+
+/* the part of a url used to spot the same site in top sites and history:
+   "https://www.example.com/" and "https://example.com" fold together */
+export const siteKey = (url) => url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "").toLowerCase();
 
 /* a key for a custom engine label that does not collide with a taken one */
 export const engineSlug = (label, takenKeys = []) => {
