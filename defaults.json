@@ -69,82 +69,58 @@
       "label": "Focus search bar on new tab",
       "active": true,
       "key": "focusOnLoad",
-      "group": "Interface"
+      "group": "Search"
     },
     {
       "label": "Hide search placeholder",
       "active": false,
-      "key": "showPlaceholder",
-      "group": "Interface"
+      "key": "hidePlaceholder",
+      "group": "Search"
     },
     {
       "label": "Hide search engines list",
       "active": false,
       "key": "hideEngines",
-      "group": "Interface"
+      "group": "Search"
     },
     {
-      "label": "Hide search button",
-      "active": false,
-      "key": "hideSearchButton",
-      "group": "Interface"
-    },
-    {
-      "label": "Hide search engine logo",
-      "active": false,
-      "key": "hideSearchLogo",
-      "group": "Interface"
-    },
-    {
-      "label": "Hide search input",
+      "label": "Hide search bar border",
       "active": false,
       "key": "hideSearchInput",
-      "group": "Interface"
+      "group": "Search"
     },
     {
-      "label": "Hide settings button",
+      "label": "Hide favourites",
       "active": false,
-      "key": "hideSettingsButton",
-      "group": "Interface"
-    },
-    {
-      "label": "Hide favourite websites list",
-      "active": true,
       "key": "hideTopSites",
-      "group": "Favourites"
-    },
-    {
-      "label": "Hide fav sites list's separator",
-      "active": false,
-      "key": "hideTopSitesSepar",
-      "group": "Favourites"
+      "group": "Page"
     },
     {
       "label": "Show clock and date",
       "active": true,
       "key": "showClock",
-      "group": "Clock"
+      "group": "Page"
     },
     {
       "label": "12-hour clock",
       "active": false,
       "key": "clock12",
-      "group": "Clock"
+      "group": "Page"
     },
     {
-      "label": "switch to light mode",
+      "label": "Light mode",
       "active": false,
       "key": "lightmode",
       "group": "Theme"
     },
     {
-      "label": "follow the browser theme",
+      "label": "Follow the browser theme",
       "active": false,
       "key": "useBrowserTheme",
       "group": "Theme"
     },
     {
-      "label": "transparent background",
+      "label": "Transparent background",
       "active": false,
       "key": "transparentBackground",
       "group": "Theme"

@@ -96,9 +96,6 @@ ul {
 .hidden {
   display: none !important;
 }
-.prevent-ui-interactivity {
-  pointer-events: none;
-}
 
 .icon-btn {
   display: flex;
@@ -181,8 +178,6 @@ ul {
   min-width: 0;
   height: 100%;
   outline: none;
-  color: var(--foreground);
-  caret-color: var(--foreground);
 }
 
 #search-input::placeholder {
@@ -192,7 +187,6 @@ ul {
 #search-btn {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--fast) var(--ease);
 }
 
 #bar:focus-within #search-btn {
@@ -325,14 +319,6 @@ img.suggestion-mark {
   white-space: nowrap;
 }
 
-#suggestions-list a span:last-of-type {
-  margin-inline-start: auto;
-  opacity: 0;
-  transform: translateX(-0.5rem);
-  color: var(--foreground);
-  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
-}
-
 #suggestions-list a:hover,
 #suggestions-list a:focus-visible {
   background: var(--surface);
@@ -343,45 +329,12 @@ img.suggestion-mark {
   color: var(--foreground);
 }
 
-#suggestions-list a:hover span:last-of-type,
-#suggestions-list a:focus-visible span:last-of-type {
-  opacity: 1;
-  transform: none;
-}
-
-#suggestions-list a svg {
-  display: none;
-  flex: none;
-  width: 1rem;
-  height: 1rem;
-  margin-inline-start: auto;
-  animation: spin 1s linear infinite;
-}
-
-#suggestions-list a.loading svg {
-  display: block;
-}
-
-#suggestions-list a.loading span:last-of-type {
-  display: none;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 #favorites-section {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   border-top: 1px solid var(--page-hairline);
   padding-top: var(--sp-3);
-}
-
-#favorites-section.no-separator {
-  border-top-color: transparent;
 }
 
 #favorites {
@@ -482,10 +435,7 @@ img.suggestion-mark {
   width: 100%;
   min-width: 0;
   height: 100%;
-  padding-block: 0;
   outline: none;
-  color: var(--foreground);
-  caret-color: var(--foreground);
 }
 
 #add-top-site-input-container input::placeholder {
@@ -606,32 +556,13 @@ img.suggestion-mark {
   fill: none;
 }
 
-#settings-panel .check svg polyline,
-#settings-panel .check svg path {
-  fill: var(--background);
-  stroke-dasharray: 60;
-  transition: stroke-dashoffset var(--base) linear;
-  transition-delay: 0.2s;
-}
-
-#settings-panel .check svg polyline {
-  stroke-dasharray: 22;
-  stroke-dashoffset: 66;
-  transition: stroke-dashoffset 0.2s linear;
-}
-
-#settings-panel input:checked + label .check svg path {
-  stroke-dashoffset: 60;
-  transition-delay: 0s;
-}
-
-#settings-panel input:checked + label .check svg polyline {
-  stroke-dashoffset: 42;
-  transition-delay: 0.2s;
+/* unchecked draws the box, checked draws the tick */
+#settings-panel input:checked + label .check path,
+#settings-panel input:not(:checked) + label .check polyline {
+  visibility: hidden;
 }
 
 .separator {
-  display: block;
   width: 1.5rem;
   height: 1px;
   margin-block: var(--sp-3);
@@ -685,7 +616,6 @@ img.suggestion-mark {
   min-width: 0;
   height: var(--bar);
   outline: none;
-  color: var(--foreground);
   font-size: var(--text-sm);
 }
 
@@ -767,7 +697,7 @@ img.suggestion-mark {
   }
 
   #engine-btn {
-    padding-inline: var(--sp-2) var(--sp-2);
+    padding-inline: var(--sp-2);
     margin-inline-end: calc(var(--sp-2) * -1);
   }
 

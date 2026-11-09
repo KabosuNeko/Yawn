@@ -4,6 +4,8 @@ const api = globalThis.browser ?? globalThis.chrome;
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
 const loadJson = async (path) => (await fetch(path)).json();
+// the browser hands favicons over as data: urls; anything else would be a request, so it is dropped
+const localFavicon = (value) => (value?.startsWith("data:") ? value : null);
 
 const [icons, defaults] = await Promise.all([loadJson("./icons.json"), loadJson("./defaults.json")]);
 
@@ -98,13 +100,28 @@ const showToast = (message, autoHide = true) => {
   if (autoHide) toastTimer = setTimeout(hideToast, 5000);
 };
 
-const svgIcon = (content, sized = false) => {
+/* a destructive action runs on the second press within the toast's 5s, so it works
+   the same with a mouse and a keyboard and never leaves a stale prompt behind */
+let armed = null;
+let armedTimer;
+const cancelConfirm = () => {
+  armed = null;
+  hideToast();
+};
+const confirmTwice = (key, message, action) => {
+  clearTimeout(armedTimer);
+  if (armed === key) {
+    armed = null;
+    return action();
+  }
+  armed = key;
+  showToast(message);
+  armedTimer = setTimeout(() => (armed = null), 5000);
+};
+
+const svgIcon = (content) => {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
-  if (sized) {
-    svg.setAttribute("width", "20px");
-    svg.setAttribute("height", "20px");
-  }
   const parsed = new DOMParser().parseFromString(
     `<svg xmlns="http://www.w3.org/2000/svg">${content}</svg>`,
     "image/svg+xml",
@@ -158,7 +175,7 @@ const applyTheme = async () => {
   let colors = lightMode() ? LIGHT_COLORS : DARK_COLORS;
 
   if (settingOn("useBrowserTheme")) {
-    const theme = await api.theme.getCurrent();
+    const theme = await api.theme.getCurrent().catch(() => null);
     colors = { ...colors, ...pickThemeColors(theme?.colors) };
   }
 
@@ -174,22 +191,13 @@ const applyTheme = async () => {
   }
 };
 
-let resetArmed = false;
-
-const resetEverything = () => {
-  if (!resetArmed) {
-    resetArmed = true;
-    showToast('Press "Reset to defaults" again to confirm', false);
-    setTimeout(() => {
-      resetArmed = false;
-    }, 5000);
-    return;
-  }
-  localStorage.removeItem("settingsOptions");
-  localStorage.removeItem("searchEngines");
-  localStorage.removeItem(FAVORITES_KEY);
-  location.reload();
-};
+const resetEverything = () =>
+  confirmTwice("reset", 'Press "Reset to defaults" again to confirm', () => {
+    localStorage.removeItem("settingsOptions");
+    localStorage.removeItem("searchEngines");
+    localStorage.removeItem(FAVORITES_KEY);
+    location.reload();
+  });
 
 const applySetting = (key, isActive) => {
   const toggle = (selector, className = "hidden") => $(selector).classList.toggle(className, isActive);
@@ -198,27 +206,14 @@ const applySetting = (key, isActive) => {
     case "focusOnLoad":
       if (isActive) searchInput.focus();
       break;
-    case "showPlaceholder":
+    case "hidePlaceholder":
       searchInput.placeholder = isActive ? "" : "/ to start typing, alt+s for settings";
-      break;
-    case "hideSettingsButton":
-      settingsBtn.classList.toggle("hidden", isActive);
-      settingsBtn.tabIndex = isActive ? -1 : 0;
       break;
     case "hideEngines":
       toggle("#engine-btn");
       break;
     case "hideTopSites":
       toggle("#favorites-section");
-      break;
-    case "hideTopSitesSepar":
-      toggle("#favorites-section", "no-separator");
-      break;
-    case "hideSearchButton":
-      toggle("#search-btn");
-      break;
-    case "hideSearchLogo":
-      toggle("#searchIcon");
       break;
     case "hideSearchInput":
       toggle("#bar", "minimal");
@@ -248,13 +243,9 @@ const handleSettingChange = (key, isActive) => {
 
   // the two theme choices contradict each other, so turning one on turns the other off
   if (isActive && THEME_SETTINGS.includes(key)) {
-    for (const otherKey of THEME_SETTINGS) {
-      const other = otherKey === key ? null : settings.find((s) => s.key === otherKey);
-      if (!other) continue;
-      other.active = false;
-      const input = document.getElementById(otherKey);
-      if (input) input.checked = false;
-    }
+    const otherKey = THEME_SETTINGS.find((k) => k !== key);
+    settings.find((s) => s.key === otherKey).active = false;
+    document.getElementById(otherKey).checked = false;
   }
 
   store.set("settingsOptions", settings);
@@ -265,7 +256,7 @@ const HISTORY_PERMISSION = "history";
 const HISTORY_OPTION = {
   key: "historyPermission",
   label: "Suggestions from browsing history",
-  group: "History",
+  group: "Search",
 };
 
 const syncHistoryOption = async () => {
@@ -347,7 +338,6 @@ const openEngineMenu = () => {
 };
 
 const renderEngineIcon = (engine) => {
-  if (!engine) return;
   const icon = engine.custom
     ? el("span", { className: "engine-mark", textContent: engine.label.slice(0, 1).toLowerCase() })
     : el("img", { src: `./images/logos/${engine.key}.webp`, alt: `${engine.key} logo` });
@@ -367,7 +357,7 @@ const renderEngines = () => {
       const option = el("li", { tabIndex: -1 });
       option.dataset.key = engine.key;
       option.setAttribute("role", "option");
-      option.setAttribute("aria-selected", String(engine.key === preferred?.key));
+      option.setAttribute("aria-selected", String(engine.key === preferred.key));
       option.append(
         el("span", { textContent: engine.label }),
         el("span", { className: "bang", textContent: `!${bangOf(engine)}` }),
@@ -380,7 +370,7 @@ const renderEngines = () => {
 const createOption = (option, container, onRemove = null) => {
   const label = el("label", { htmlFor: option.key });
   const check = el("div", { className: "check" });
-  check.append(svgIcon(icons.check.content, true));
+  check.append(svgIcon(icons.check.content));
   label.append(check, el("span", { textContent: option.label }));
 
   const li = document.createElement("li");
@@ -405,7 +395,8 @@ const renderSettings = () => {
   enginesContainer.replaceChildren();
 
   let group = null;
-  for (const option of [...settings, HISTORY_OPTION]) {
+  // first, so it shares the "Search" heading with the shipped search options
+  for (const option of [HISTORY_OPTION, ...settings]) {
     if (option.group && option.group !== group) {
       group = option.group;
       settingsContainer.append(el("li", { className: "group", textContent: group }));
@@ -456,7 +447,7 @@ const performSearch = (query) => {
     engines.find((candidate) => candidate.preferred && candidate.active) ??
     engines.find((candidate) => candidate.active) ??
     engines[0];
-  if (engine) location.href = searchTarget(engine, term);
+  location.href = searchTarget(engine, term);
 };
 
 const selectEngine = (key) => {
@@ -522,17 +513,10 @@ const getSuggestions = async (query) => {
 
 const buildSuggestionItem = (entry) => {
   const link = el("a", { className: "suggestion-link", href: entry.url });
-  // firefox hands top sites a data url with the real icon; anything else, and
-  // anything remote on other browsers, falls back to the site's letter
-  const mark = entry.favicon?.startsWith("data:")
+  const mark = localFavicon(entry.favicon)
     ? el("img", { className: "suggestion-mark", src: entry.favicon, alt: "" })
     : el("span", { className: "suggestion-mark", textContent: monogram(entry.url) });
-  link.append(
-    mark,
-    el("span", { textContent: entry.title || entry.url }),
-    el("span", { textContent: "\u2192" }),
-    svgIcon(icons.loading.content, true),
-  );
+  link.append(mark, el("span", { textContent: entry.title || entry.url }));
 
   const row = document.createElement("li");
   row.append(link);
@@ -548,7 +532,7 @@ const renderSuggestions = async (query) => {
 
   if (!items) {
     const link = el("a", { className: "suggestion-link" });
-    link.append(el("span", { textContent: "We have issue getting the suggestion from your browser" }));
+    link.append(el("span", { textContent: "Could not read suggestions from the browser" }));
     const row = document.createElement("li");
     row.append(link);
     return suggestionsList.replaceChildren(row);
@@ -581,15 +565,17 @@ const FAVORITES_KEY = "topSites";
 const MAX_FAVORITES = 8;
 const ADD_PROMPT = { value: "", placeholder: "Add new favourite website link", action: "addNewUrl" };
 
+const FULL_MESSAGE = `Favourites are full (${MAX_FAVORITES}): remove one first`;
+
+// seeded from the browser only on first run: an emptied list stays empty
+const neverSeeded = localStorage.getItem(FAVORITES_KEY) === null;
 let favorites = store.get(FAVORITES_KEY, []);
-let newFavUrl = null;
 let editTarget = null;
-let pendingDeleteId = null;
 
 const newFavId = () => crypto.randomUUID().slice(0, 8);
 
 const favActionButton = (id, action, icon, title) => {
-  const button = el("button", { className: "icon-btn top-site-action-button", title, tabIndex: -1 });
+  const button = el("button", { className: "icon-btn top-site-action-button", title });
   button.dataset.id = id;
   button.dataset.action = action;
   button.dataset.icon = icon;
@@ -605,15 +591,14 @@ const renderFavorites = () => {
       title: site.title,
       draggable: false,
     });
-    // the browser hands favicons over as data: urls, never a url we would have to fetch
-    if (site.favicon?.startsWith("data:")) link.append(el("img", { src: site.favicon, alt: "" }));
+    if (localFavicon(site.favicon)) link.append(el("img", { src: site.favicon, alt: "" }));
     else link.textContent = monogram(site.url);
     link.setAttribute("aria-label", site.title);
 
     const actions = el("div", { className: "tile-actions" });
     actions.append(
-      favActionButton(site.id, "edit", "pen", `edit ${site.title}`),
-      favActionButton(site.id, "delete", "trash", `delete ${site.title}`),
+      favActionButton(site.id, "edit", "pen", `Edit ${site.title}`),
+      favActionButton(site.id, "delete", "trash", `Delete ${site.title}`),
     );
 
     const tile = el("li", { className: "tile", draggable: true });
@@ -645,38 +630,31 @@ const submitFavorite = () => {
   if (!value) return;
 
   switch (topSiteInput.dataset.action) {
-    case "addNewTitle":
-      favorites.push({ id: newFavId(), title: value, url: newFavUrl });
-      newFavUrl = null;
-      store.set(FAVORITES_KEY, favorites);
-      renderFavorites();
-      setInputMode(ADD_PROMPT, { message: "Link is added successfully" });
-      break;
-
     case "editTitle":
       editTarget = { ...editTarget, title: value };
       favorites = favorites.map((site) => (site.id === editTarget.id ? editTarget : site));
       editTarget = null;
       store.set(FAVORITES_KEY, favorites);
       renderFavorites();
-      setInputMode(ADD_PROMPT, { message: "Link is updated successfully" });
+      setInputMode(ADD_PROMPT, { message: "Favourite updated" });
       break;
 
     default: {
       const url = toUrl(value);
-      if (!url) return showToast("Please Enter Valid URL. it must start with https://");
+      if (!url) return showToast("Enter a web address, like example.com");
       if (topSiteInput.dataset.action === "editUrl") {
         editTarget = { ...editTarget, url: url.href };
         setInputMode(
           { value: editTarget.title, placeholder: "Edit title", action: "editTitle" },
-          { message: "Link is updated, now edit the title of the link" },
+          { message: "Now edit the title" },
         );
       } else {
-        newFavUrl = url.href;
-        setInputMode(
-          { value: "", placeholder: "Add title for your URL", action: "addNewTitle" },
-          { message: "Link is saved, now add title of the link" },
-        );
+        if (favorites.length >= MAX_FAVORITES) return showToast(FULL_MESSAGE);
+        // the host is the title until the user edits it
+        favorites.push({ id: newFavId(), title: url.hostname.replace(/^www\./, ""), url: url.href });
+        store.set(FAVORITES_KEY, favorites);
+        renderFavorites();
+        setInputMode(ADD_PROMPT, { message: "Favourite added" });
       }
     }
   }
@@ -685,57 +663,40 @@ const submitFavorite = () => {
 const startEdit = (id) => {
   editTarget = { ...favorites.find((site) => site.id === id) };
   favoritesSection.classList.add("adding");
-  setInputMode({ value: editTarget.url, placeholder: "Edit Url", action: "editUrl" });
+  setInputMode({ value: editTarget.url, placeholder: "Edit address", action: "editUrl" });
 };
 
-const requestDelete = (id) => {
-  pendingDeleteId = id;
-  document.body.classList.add("prevent-ui-interactivity");
-  showToast('Are you sure you want to remove this website ? Press "Enter" to confirm, "Esc" to cancel', false);
-};
-
-const confirmDelete = () => {
-  favorites = favorites.filter((site) => site.id !== pendingDeleteId);
-  store.set(FAVORITES_KEY, favorites);
-  renderFavorites();
-  document.body.classList.remove("prevent-ui-interactivity");
-  pendingDeleteId = null;
-  showToast("Favourite website removed successfully");
-};
+const requestDelete = (id) =>
+  confirmTwice(`delete:${id}`, "Press delete again to remove this favourite", () => {
+    favorites = favorites.filter((site) => site.id !== id);
+    store.set(FAVORITES_KEY, favorites);
+    renderFavorites();
+    showToast("Favourite removed");
+  });
 
 const isAdding = () => favoritesSection.classList.contains("adding");
 
 const openAddForm = () => {
+  if (favorites.length >= MAX_FAVORITES) return showToast(FULL_MESSAGE);
   favoritesSection.classList.add("adding");
   setInputMode(ADD_PROMPT);
 };
 
 const closeAddForm = () => {
   favoritesSection.classList.remove("adding");
-  newFavUrl = null;
   editTarget = null;
   setInputMode(ADD_PROMPT, { focus: false });
 };
 
-const cancelDelete = () => {
-  hideToast();
-  document.body.classList.remove("prevent-ui-interactivity");
-  pendingDeleteId = null;
-};
-
 let draggedId = null;
-
-const persistFavoriteOrder = (id) => {
-  store.set(FAVORITES_KEY, favorites);
-  renderFavorites();
-  favoritesList.querySelector(`[data-id="${id}"] .tile-link`)?.focus();
-};
 
 const reorderFavorite = (id, to) => {
   const from = favorites.findIndex((site) => site.id === id);
   if (from < 0 || to < 0 || to >= favorites.length || from === to) return;
   favorites.splice(to, 0, ...favorites.splice(from, 1));
-  persistFavoriteOrder(id);
+  store.set(FAVORITES_KEY, favorites);
+  renderFavorites();
+  favoritesList.querySelector(`[data-id="${id}"] .tile-link`)?.focus();
 };
 
 const moveFavorite = (id, targetId) => reorderFavorite(id, favorites.findIndex((site) => site.id === targetId));
@@ -779,32 +740,21 @@ const initFavoriteOrdering = () => {
   });
 };
 
-// the browser hands favicons over as data: urls, so a tile never needs a request
-const localFavicon = (value) => (value?.startsWith("data:") ? value : null);
-
 const initFavorites = async () => {
-  if (!favorites.length) {
-    const browserSites = await api.topSites.get().catch(() => []);
+  const browserSites = await api.topSites.get().catch(() => []);
+  if (neverSeeded) {
     favorites = browserSites.slice(0, MAX_FAVORITES).map((site) => ({
       id: newFavId(),
       title: site.title || site.url,
       url: site.url,
-      ...(localFavicon(site.favicon) ? { favicon: site.favicon } : {}),
+      favicon: localFavicon(site.favicon),
     }));
-    store.set(FAVORITES_KEY, favorites);
-  } else if (favorites.some((site) => !site.favicon)) {
-    // favourites saved before tiles carried icons: take the ones the browser still has, leave the rest
-    const browserSites = await api.topSites.get().catch(() => []);
+  } else {
+    // a favourite added by hand has no icon: take the one the browser has for that url, if any
     const known = new Map(browserSites.map((site) => [site.url, localFavicon(site.favicon)]));
-    let gained = false;
-    favorites = favorites.map((site) => {
-      const favicon = site.favicon ? null : known.get(site.url);
-      if (!favicon) return site;
-      gained = true;
-      return { ...site, favicon };
-    });
-    if (gained) store.set(FAVORITES_KEY, favorites);
+    favorites = favorites.map((site) => ({ ...site, favicon: site.favicon || known.get(site.url) || null }));
   }
+  store.set(FAVORITES_KEY, favorites);
   renderFavorites();
 
   favoritesList.addEventListener("click", (event) => {
@@ -830,7 +780,7 @@ const initGlobalListeners = () => {
 
     if (event.key === "Escape") {
       if (!engineMenu.hidden) return closeEngineMenu();
-      if (pendingDeleteId !== null) return cancelDelete();
+      if (armed) return cancelConfirm();
       if (isAdding()) return closeAddForm();
       if (searchInput.value) {
         searchInput.value = "";
@@ -878,7 +828,6 @@ const initGlobalListeners = () => {
         if (option) selectEngine(option.dataset.key);
         return;
       }
-      if (pendingDeleteId !== null) return confirmDelete();
       if (event.target === searchInput) performSearch(searchInput.value.trim());
     }
   });
@@ -939,15 +888,12 @@ const initGlobalListeners = () => {
 
   resetButton.addEventListener("click", resetEverything);
 
-  suggestionsList.addEventListener("click", (event) => {
-    event.target.closest(".suggestion-link")?.classList.add("loading");
-  });
-
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
     if (settingOn("useBrowserTheme")) applyTheme();
   });
 
   favoritesList.addEventListener("wheel", (event) => {
+    if (favoritesList.scrollWidth <= favoritesList.clientWidth || !event.deltaY) return;
     event.preventDefault();
     favoritesList.scrollLeft += event.deltaY;
   });

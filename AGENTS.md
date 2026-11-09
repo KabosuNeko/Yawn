@@ -50,7 +50,7 @@ logic leaves one runnable check behind.
 | `index.html` | the page; the extension's new tab |
 | `new_tab.js` / `new_tab.css` | all behaviour and all styling |
 | `lib.js` | pure helpers, the only unit-tested file |
-| `defaults.json` | shipped engines (9) and settings toggles (14, plus the history row the drawer synthesises) |
+| `defaults.json` | shipped engines (9) and settings toggles (10, plus the history row the drawer synthesises) |
 | `icons.json` | inline SVG markup for the UI icons |
 | `manifest.json` | the Firefox extension: newtab and homepage overrides, `topSites`, optional `history` |
 | `web-ext-config.mjs` | what the `.xpi` must not contain (test, docs, image sources, README assets) |
@@ -79,27 +79,26 @@ release build that pref does nothing and the unsigned add-on is deleted at start
   nullish coalescing, top-level `await`. `UPPER_SNAKE_CASE` module constants; handlers named `initX` / `renderX` /
   `applyX` / `handleX` / `toggleX` / `closeX`; predicates `hasX` / `isX` / `clockIs12h`.
 - No `console.*`; user feedback goes through `showToast(message, autoHide)`, destructive actions through a
-  non-auto-hiding confirm. Swallow-and-fallback at the boundary (`store.get` parse guard).
+  `confirmTwice` (runs on the second press within 5s, Esc cancels). Swallow-and-fallback at the boundary (`store.get` parse guard).
 - DOM contract: ids for singleton structure, kebab-case classes for reusable parts, `data-*` as the JS link
   (`data-icon`, `data-id`, `data-key`, `data-action`). `#suggestions-list` is absolutely positioned, so it belongs
   inside `#bar` (its containing block) - as a sibling of the bar it lands on top of it. State classes: `hidden`,
-  `adding`, `minimal`, `no-separator`, `dragging`, `drop-target`, `prevent-ui-interactivity`. Keep the `aria-*`
+  `adding`, `minimal`, `dragging`, `drop-target`. Keep the `aria-*`
   renderers in sync.
 - Theming is CSS custom properties written on `document.documentElement.style`; `--hairline` and `--surface` are
   derived in CSS, so a palette only needs `--background`, `--foreground` and `--foreground50`.
 
 ## Testing & QA
 
-- `node:test` + `node:assert/strict` in `test/lib.test.js` covers the pure helpers (`toUrl`, `searchTarget`,
+- `node:test` + `node:assert/strict` in `test/lib.test.js` covers the pure helpers (`toUrl`, `searchTarget`, `siteKey`,
   `monogram`, `engineSlug`, `uniqueBang`). There is no coverage threshold and no CI.
 - The page itself has no automated test: load the add-on (`about:debugging`) and exercise the changed
   path - search and `!bang`, engine switching, suggestions with and without the history permission, favourites
-  add/edit/delete/reorder, each setting, reset, `?focus`. Defaults to remember: dark theme, favourites capped at 8,
-  and `hideTopSites` ships on, so the favourites section starts hidden.
+  add/edit/delete/reorder, each setting, reset, `?focus`. Defaults to remember: dark theme, favourites capped at 8
+  and seeded from top sites only on first run (or after reset).
 
 ## Known Sharp Edges
 
-- `hideTopSites` ships `active: true`, which *hides* the favourites section until the user turns it off.
 - `store.get` falls back only for missing or corrupt JSON: an empty array is a valid stored value.
 - The page cannot run from `file://`; anything that assumes a plain double-click will break.
 - Light or dark comes from `prefers-color-scheme`, the only palette signal web content gets; the browser's own theme

@@ -40,7 +40,7 @@ take it back there.
 - `/` focuses the search box, `alt+s` opens settings, `esc` backs out.
 - Favourites are tiles: add, edit, delete, drag to reorder (or `ctrl` + arrows). Firefox's top sites seed them once.
 - Typing suggests sites from your top sites, and from your history once you grant that permission.
-- 15 settings: layout, clock, light mode, following the browser theme, transparent background.
+- 11 settings: layout, clock, light mode, following the browser theme, transparent background.
 
 ## Privacy
 
